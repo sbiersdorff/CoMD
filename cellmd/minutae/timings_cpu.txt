@@ -1,0 +1,71 @@
+on client____________________________ 
+
+   File = data/1m.inp.gz
+   potdir = pots
+   potname = ag
+   nSPUS = 8
+   debug = 0
+   doppu = 0
+   series = 0
+on client_____________________________ 
+
+_______ss________Sizes are: n=1048576, s=1152, d=8388608, i=4194304
+  __  __  __  __  __ sumalloc: 2aaab4ac6010, 54527104
+______Sizes are: n=1048576, s=1152, d=8388608, i=4194304
+
+    ---- Read file took 15.45s and copy took = 0.03s
+
+  __  __  __  __  __ sumalloc: 956fc0, 48
+  __  __  __  __  __ sumalloc: 956fc0, 48
+  __  __  __  __  __ sumalloc: a24230, 3136
+
+   File = data/1m.inp.gz
+   potdir = pots
+   potname = ag
+   nSPUS = 8
+   debug = 0
+   doppu = 0
+   series = 0
+  __  __  __  __  __ sumalloc: 2aaab36c6010, 54527152
+______Sizes are: n=1048576, s=1152, d=8388608, i=4194304
+__c__________ 0 is at (          0.02884003,         65.36843232,          32.7093091)
+__c__________ 1 is at (          0.02884003,         65.36843232,         163.5893091)
+__c__________ 2 is at (          0.02884003,         65.36843232,         294.4693091)
+__c__________ 3 is at (          0.02884003,         65.36843232,         425.3493091)
+__c__________ 4 is at (         65.46884003,         65.36843232,          32.7093091)
+    Final factor is 1.030000
+    boxes dimensions: 45 x 22 x 91 = 90090  pdxyz=(5.82,5.95,5.75)
+
+    ---- convert clientSim took 0.67s
+
+    Computing the ppu eam force
+    11.146 s to compute the ppuforce (e =         -107820.37525507870305)
+    ____ Forces on particle 0 = (   -0.01,   -0.00,   -0.02)
+    ____ Forces on particle 4 = (    0.01,   -0.02,   -0.01)
+    ____ Forces on particle 1 = (   -0.01,   -0.00,   -0.02)
+    ____ Forces on particle 2 = (   -0.01,   -0.00,   -0.02)
+    ____ Forces on particle 3 = (   -0.01,   -0.00,   -0.02)
+______Sizes are: n=1048576, s=1152, d=8388608, i=4194304
+    ____ Forces on particle 0 = (   -0.01,   -0.00,   -0.02)
+    ____ Forces on particle 1 = (   -0.01,   -0.00,   -0.02)
+    ____ Forces on particle 2 = (   -0.01,   -0.00,   -0.02)
+    ____ Forces on particle 3 = (   -0.01,   -0.00,   -0.02)
+    ____ Forces on particle 4 = (    0.01,   -0.02,   -0.01)
+
+
+  ------------------------------------------
+   Compute on Server took 12.121s
+   (force=11.146s, data translation t= 0.665s, endianConvert=0.00s all else =0.310s)
+  ------------------------------------------
+
+
+
+
+  ------------------------------------------
+   On Client report is: 
+   File read time = 15.48s
+   Send to Server, compute, and return took 12.125s
+   Endian swap took 0.000s
+  ------------------------------------------
+
+

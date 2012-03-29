@@ -1,0 +1,12 @@
+  ------------------------------------------
+   Compute on Server took 6.134s
+   (force=3.944s, data translation t= 1.709s, endianConvert=0.00s all else =0.480s (mpiTime=0.358))
+  ------------------------------------------
+
+  ------------------------------------------
+   On Client report is: 
+   File read time = 15.78s
+   Send to Server, compute, and return took 6.134s
+   Endian swap took 0.092s
+  ------------------------------------------
+

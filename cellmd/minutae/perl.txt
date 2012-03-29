@@ -1,0 +1,14 @@
+   486  19:51   perl -pi.bak -e 's/ATOMS/atoms_t/g' *.[ch]
+   491  19:52   perl -pi.bak -e 's/BOXES/boxes_t/g' *.[ch]
+   492  19:52   perl -pi -e 's/noboxes_t/NOBOXES/g' *.[ch]
+   497  19:53   perl -pi -e 's/NOboxes_t/NOBOXES/g' *.[ch]
+   504  19:54   perl -pi -e 's/SIMULATION/simulation_t/g' *.[ch]
+   509  19:55   perl -pi.bak -e 's/POTENTIALARRAY/potentialarray_t/g;s/EAMPOTENTIAL/eampotential_t/g;' *.[ch]
+   524  19:56   perl -pi.bak -e 's/DMA_STREAM_STRUCT_PTR/dma_stream_struct_ptr_t/g' *.[ch]
+   530  19:57   perl -pi.bak -e 's/MYTYPE/real_t/g' *.[ch]
+   533  19:57   perl -pi.bak -e 's/MYTYPE/real_t/g' Makefile
+   542  19:59   perl -pi.bak -e 's/POTARRAY/potarray_t/g; s/ORIGARRAY/origarray_t/g;' *.[ch]
+   554  20:01   perl -pi -e 's/potarray_t1/potarray_1_t/g' *.ch
+   555  20:01   perl -pi -e 's/potarray_t1/potarray_1_t/g' *.[ch]
+   556  20:01   perl -pi -e 's/potarray_t2/potarray_2_t/g' *.[ch]
+   581  20:30   history | gi perl

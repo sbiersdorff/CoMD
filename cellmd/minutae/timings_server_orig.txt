@@ -1,0 +1,4 @@
+   Compute on Server took 6.114s
+   (force=3.925s, data translation t= 1.708s, endianConvert=0.00s all else =0.481s (mpiTime=0.358))
+
+   Endian swap took 0.092s

@@ -1,0 +1,110 @@
+on client____________________________ 
+
+   File = data/1m.inp.gz
+   potdir = pots
+   potname = ag
+   nSPUS = 8
+   debug = 0
+   doppu = 0
+   series = 0
+on client_____________________________ 
+
+_______ss________Sizes are: n=1048576, s=1152, d=8388608, i=4194304
+  __  __  __  __  __ sumalloc: 2aaab4ac6010, 54527104
+______Sizes are: n=1048576, s=1152, d=8388608, i=4194304
+
+    ---- Read file took 15.00s and copy took = 0.05s
+
+  __  __  __  __  __ sumalloc: 95b200, 48
+  __  __  __  __  __ sumalloc: 95b200, 48
+  __  __  __  __  __ sumalloc: 10109de0, 3120
+
+   File = data/1m.inp.gz
+   potdir = pots
+   potname = ag
+   nSPUS = 8
+   debug = 0
+   doppu = 0
+   series = 0
+Image of eam_spe loaded at: 100b8a58 entry = -1 / -1
+  __  __  __  __  __ sumalloc: 42e50008, 54527136
+______Sizes are: n=1048576, s=1152, d=8388608, i=4194304
+__c__________ 0 is at (          0.02884003,         65.36843232,          32.7093091)
+__c__________ 1 is at (          0.02884003,         65.36843232,         163.5893091)
+__c__________ 2 is at (          0.02884003,         65.36843232,         294.4693091)
+__c__________ 3 is at (          0.02884003,         65.36843232,         425.3493091)
+__c__________ 4 is at (         65.46884003,         65.36843232,          32.7093091)
+    Final factor is 1.030000
+    boxes dimensions: 45 x 22 x 91 = 90090  pdxyz=(5.82,5.95,5.75)
+
+    ---- convert clientSim took 2.45s
+
+
+
+    Domainheadersize=240
+
+
+    Computing the spu eam force
+
+
+----------------------------------------------------
+  SPU : e = -107820.37525513413129        
+----------------------------------------------------
+  spu0: e = -13411.029048423060885        , maxNbrs = 0                              
+  spu1: e = -13502.640502869413467        , maxNbrs = 0                              
+  spu2: e = -13494.597402466655694        , maxNbrs = 0                              
+  spu3: e = -13502.981546960654669        , maxNbrs = 0                              
+  spu4: e = -13502.794928269300726        , maxNbrs = 0                              
+  spu5: e = -13494.597402466608401        , maxNbrs = 0                              
+  spu6: e = -13502.94859983632341         , maxNbrs = 0                              
+  spu7: e = -13408.785823842124955        , maxNbrs = 0                              
+----------------------------------------------------
+    Max neighbors: 0
+----------------------------------------------------
+
+
+----------------------------------------------------
+    timing information   
+----------------------------------------------------
+   spu0:     3.87728 seconds (5.55148e+07 ticks)
+   spu1:      3.8882 seconds (5.56712e+07 ticks)
+   spu2:     3.89646 seconds (5.57896e+07 ticks)
+   spu3:     3.89526 seconds (5.57723e+07 ticks)
+   spu4:      3.8876 seconds (5.56627e+07 ticks)
+   spu5:     3.87753 seconds (5.55185e+07 ticks)
+   spu6:     3.86964 seconds (5.54056e+07 ticks)
+   spu7:     3.84614 seconds (5.50691e+07 ticks)
+----------------------------------------------------
+   Wallclock time:    3.91731 seconds for spu based computation.
+----------------------------------------------------
+
+    3.919 s to compute the ppuforce (e =                              0)
+    ____ Forces on particle 0 = (    0.53,    0.00,    0.00)
+    ____ Forces on particle 4 = (    0.99,    0.00,    0.00)
+    ____ Forces on particle 1 = (    0.53,    0.00,    0.00)
+    ____ Forces on particle 2 = (    0.53,    0.00,    0.00)
+    ____ Forces on particle 3 = (    0.53,    0.00,    0.00)
+______Sizes are: n=1048576, s=1152, d=8388608, i=4194304
+
+
+  ------------------------------------------
+   Compute on Server took 7.181s
+   (force=3.919s, data translation t= 2.442s, endianConvert=0.00s all else =0.820s)
+  ------------------------------------------
+
+
+    ____ Forces on particle 0 = (    0.53,    0.00,    0.00)
+    ____ Forces on particle 1 = (    0.53,    0.00,    0.00)
+    ____ Forces on particle 2 = (    0.53,    0.00,    0.00)
+    ____ Forces on particle 3 = (    0.53,    0.00,    0.00)
+    ____ Forces on particle 4 = (    0.99,    0.00,    0.00)
+
+
+  ------------------------------------------
+   On Client report is: 
+   File read time = 15.05s
+   Send to Server, compute, and return took 7.256s
+   Endian swap took 0.096s
+  ------------------------------------------
+
+
