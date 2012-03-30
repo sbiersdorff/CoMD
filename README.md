@@ -8,7 +8,7 @@ CoMD is designed to be an extensible molecular dynamics proxy applications suite
 
 CoMD allows the user to use either the Lennard-Jones potential or the Embedded Atom Method potential. Both these are discussed in reference (2) below. All we do in the main subroutine in `src-flat/pmd.c` is:
 
- *  read in a data file
+ *  read a data file
  *  write out a file that can be read by `clsman` (http://www.t12.lanl.gov/home/afv/)
  *  call `do_compute_work()` to compute on this data
  *  write out a final configuration that is `clsman` compatible
