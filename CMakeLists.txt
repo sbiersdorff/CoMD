@@ -9,7 +9,7 @@ set (OPT -O5 CACHE STRING "Optimized")
 set (DO_IN_SITU_VIZ false CACHE BOOL "DO_IN_SITU_VIZ")
 set (USE_VTK false CACHE BOOL "USE_VTK")
 set (VIZ_ANIMATION false CACHE BOOL "VIZ_ANIMATION")
-set (DO_OCL ON CACHE BOOL "Build OpenCL code")
+set (DO_OCL OFF CACHE BOOL "Build OpenCL code")
 set (DO_INTEROP_VIZ false CACHE BOOL "DO_INTEROP_VIZ")
 
 set(VTK_DIR "" CACHE LOCATION "VTK Directory")
