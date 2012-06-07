@@ -126,7 +126,8 @@ void writeClsman(simflat_t *s, char *fname) {
   ti[4] = 3*sizeof(int);/*header*/
   ti[5]=0;/*header*/
   ti[6]=0;/*header*/
-  fwrite(ti,7,sizeof(int),fp);
+  fwrite(ti,7,sizeof(int),fp); // start with ti item size =7 and size of int writes to fp
+  // for 8192 case this writes: 12, 8192, 0,0, 12,0,0
 
   rl = getRL(s);
 
@@ -138,9 +139,14 @@ void writeClsman(simflat_t *s, char *fname) {
   td[1] = (double)s->bounds[1];
   td[2] = (double)s->bounds[2];
   fwrite(td,3,sizeof(double),fp); 
+  //od output from file (offset 40 is td, doubles shown):
+  //  0000040     6.544000000000000e+01    6.544000000000000e+01
+  //  0000060     3.272000000000000e+01   9.039362550185624e-309
 
   ti[0] = 3*sizeof(double);/*header*/
-  fwrite(ti,1,sizeof(int),fp);
+  fwrite(ti,1,sizeof(int),fp);// again write a single integer probably 24
+  // offset 70
+
   
   ti[0] = s->ntot*(6*sizeof(double) + 1*sizeof(int));
   fwrite(ti,1,sizeof(int),fp);
@@ -166,3 +172,58 @@ void writeClsman(simflat_t *s, char *fname) {
   return;
 }
   
+/* gzASCIIWrite Writer written by John Patchett 6/7/2012
+ * to match the expectations of fromFileGzip()
+ * This writes ascii text to a gzip file using zlib methods
+ *                                                           */
+
+#include "zlib.h"
+void gzASCIIWrite(simflat_t *s, char *fname) {
+  myrl_t *rl;                  //From the science ... ???
+  gzFile fp;                   //File pointer
+  int i;                       //iterator over atoms
+  double td[16];               //temporary storage for x,y,z, px,py,pz per atom
+  char stringtowrite[16348];   //String that will get written to file
+  int bytes_written;           //used to ensure each file write nominally worked
+
+  fp = gzopen(fname,"wb");
+
+  /* 1. number of atoms followed by nmove */
+  sprintf(stringtowrite, "%d 0\n", s->ntot);
+  bytes_written = gzputs(fp, stringtowrite);
+  if (bytes_written < 1) exit(-99);
+
+  /* 2. Comment Line                      */
+  sprintf(stringtowrite, "%s", s->comment );
+  bytes_written = gzputs(fp, stringtowrite);
+  if (bytes_written < 1) exit(-98);
+
+
+  /* 3. Write the bounds -- 3 reals on 1 line */
+  sprintf(stringtowrite, "%.8lf %.8lf %.8lf\n",
+		   (double)s->bounds[0], (double)s->bounds[1], (double)s->bounds[2]);
+  bytes_written = gzputs(fp, stringtowrite);
+  if (bytes_written < 1) exit(-97);
+
+  /* 4. for each atom x,y,z,itype,px,py,pz*/
+  rl = getRL(s);
+  for(i=0; i<s->ntot; i++)
+  {
+    const int jtype=1;
+    int id = MAXATOMS*rl[i].box+rl[i].id;
+    int j;
+    double r[3],p[3];
+    for(j=0; j<3; j++) {
+      td[j] = (double)s->dcenter[rl[i].box][j] + (double)s->r[id][j];
+      td[j+3] = (double)s->p[id][j];
+    }
+    sprintf(stringtowrite, "%.8lf %.8lf %.8lf %d %.8lf %.8lf %.8lf\n",
+    		td[0], td[1], td[2], jtype, td[3], td[4], td[5]);
+    bytes_written = gzputs(fp, stringtowrite);
+    if (bytes_written < 1) exit(-97);
+  }
+  gzclose(fp);
+}
+
+
+
