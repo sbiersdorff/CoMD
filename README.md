@@ -27,11 +27,11 @@ Building:
 
 Create a 'build' directory at the top level.
    
-   mkdir build
-   cd build
-   ccmake ..
-   <enter c c g >
-   make
+    mkdir build
+    cd build
+    ccmake ..
+    <enter c c g >
+    make
 
 Several options are available in ccmake, including:
 
@@ -52,7 +52,7 @@ Running (LJ):
 
 Running OpenCL
 
-   ./CoMDOCL (all options available in base version)
+    ./CoMDOCL (all options available in base version)
 
 Command line parameters are:
 
