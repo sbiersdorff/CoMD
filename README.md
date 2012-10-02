@@ -25,18 +25,34 @@ All other variants such as `src-viz` and `src-ocl` build off this.
 
 Building:
 
-    ccmake .
-    <enter c c g >
-    make
+Create a 'build' directory at the top level.
+   
+   mkdir build
+   cd build
+   ccmake ..
+   <enter c c g >
+   make
+
+Several options are available in ccmake, including:
+
+   * toggle single/double precision
+   * toggle OpenCL build
+   * toggle in-situ viz
+   * toggle VTK use for viz
+   * toggle viz interop (for OpenCL version)
+   * toggle approximate centrosymmetry computation in viz
 
 Running (EAM):
 
-    ./comd -p ag -e -f data/8k.inp.gz
+    ./CoMD -p ag -e -f data/8k.inp.gz
 
 Running (LJ):
 
-    ./comd -f data/8k.inp.gz
+    ./CoMD -f data/8k.inp.gz
 
+Running OpenCL
+
+   ./CoMDOCL (all options available in base version)
 
 Command line parameters are:
 
@@ -46,12 +62,20 @@ Command line parameters are:
  * `-p <potname>` : name of the EAM potential
  * `-d <potdir>` : directory where EAM potential files reside
  * `-z` : disable periodic boundary conditions
+ * `-x Nx -y Ny -z Nz` : create an FCC lattice with the given dimensions (in lattice cell dimensions).
+ * `-s defgrad` : perform a 1D stretch (in x) of the domain with the specified deformation gradient.
+
+Additional command line parameters for the OpenCL version:
+
+ * `-g` : use the GPU if available
 
 ## Directories
 
 `src-flat`:
 This is the base code with the data structure flattened out.  We assume that all particles will be mapped to a grid that has cells that are at least one cuttoff in each dimension.  Interactions between particles are handled as interactions between particles in pairs of mesh cells.  `Main` is in `pmd.c`.
 
+`src-ocl`:
+This contains the OpenCL implementation. The OpenCL version uses the IO routines in `src-flat` and makes copies of that data (with different data layout, as appropriate). The OpenCL code runs the base code after the OpenCL runs, to test for correctness. 
 
 `data`:
 This contains a few input files for testing.  Note that the code in the `src-flat` directory has been verified against `clsman` and we have confidence that it gives correct results for EAM potential.
