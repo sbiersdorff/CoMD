@@ -1,3 +1,7 @@
+# Update Coming Soon:
+
+Full functionality discussed at the Deep Dive will be available soon. Thanks for your pateince.
+
 # CoMD: A Molecular Dynamics Proxy Applications Suite
 
 CoMD is one of many _proxy applications_ that support of the [ExMatEx](http://exmatex.lanl.gov) Co-Design Center--one of three Exascale Co-Design Centers. ExMatEx is funded by the DoE office of [Advanced Scientific Computing Research](http://science.energy.gov/ascr) (ASCR). Dr. Karen Pao is the program manager and Dr. William Harrod is the director of the ASCR Research Division. Dr. Tim Germann (Los Alamos) is the ExMatEx Center Director.
