@@ -5,11 +5,7 @@
   global memory.
   Since OpenCL doesn't pick up #include properly, we need to manually switch real_t from 
   float to double in each kernel file individually.
-  **/
-
-//Initial implementation of the MD code
-/* CL_REAL_T is set to single or double depending on compile time flags */
-typedef CL_REAL_T real_t; 
+  **/ 
 
 #define N_MAX_ATOMS 64
 #define N_MAX_NEIGHBORS 27
@@ -22,6 +18,10 @@ typedef CL_REAL_T real_t;
 #elif defined(cl_amd_fp64)  // AMD extension available?
 #pragma OPENCL EXTENSION cl_amd_fp64 : enable
 #endif
+
+//Initial implementation of the MD code
+/* CL_REAL_T is set to single or double depending on compile time flags */
+typedef CL_REAL_T real_t;
 
 void eamInterpolateDeriv(real_t r,
 	__global const real_t* values,
