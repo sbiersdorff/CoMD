@@ -69,7 +69,6 @@ simflat_t *fromFileASCII(command_t cmd, struct pmd_base_potential_t *pot) {
     // assign the needed parameters from the commnad struct
 
     char *filename = cmd.filename;
-    s->bf = cmd.bf;
 
   simflat_t *s = NULL;
   FILE *fp;
@@ -95,6 +94,7 @@ simflat_t *fromFileASCII(command_t cmd, struct pmd_base_potential_t *pot) {
     return s;
   }
 
+  s->bf = cmd.bf;
 
   /* read in natom and nmove */
   fscanf(fp,"%d%d\n",&natoms,&nmove);
@@ -111,7 +111,6 @@ simflat_t *fromFileASCII(command_t cmd, struct pmd_base_potential_t *pot) {
 
   fscanf(fp,FMT1 " " FMT1 " " FMT1 "\n",s->bounds,s->bounds+1,s->bounds+2);
 
-/
 #if DOREADTIMERS  >2
     old = clock();
 #endif

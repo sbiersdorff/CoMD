@@ -1,0 +1,57 @@
+# This is a skeleton makefile in case cmake is having problems..
+# All the paths need to be adjusted to your system. 
+# This file provides the base SRCS that you need.
+
+# Uncomment the appropriate lines to enable build options
+#
+# Precision option
+
+#PREC_FLAG = -DDOUBLE
+PREC_FLAG = -DSINGLE
+
+#Chebyshev coefficients for EAM
+
+#CHEBY_FLAG = -DUSE_CHEBY
+
+FLAGS = $(PREC_FLAG) $(CHEBY_FLAG) -DGZIPSUPPORT
+
+#INCS = {path to opencl.h}
+#LIBS = {path to libopencl.so}
+
+# gzip library
+#
+LIBS = -lz
+
+HEAD = 	 -I. -I./include 
+
+SRCS =  pmd.c \
+	docompute.c\
+	cmdLineParser.c \
+        domains.c \
+        eam.c \
+        ljForce.c \
+        ic_fcc.c \
+        cheby.c \
+        mycommand.c \
+        read.c \
+        write.c \
+        utility.c \
+        timestep.c
+
+OBJS = $(SRCS:.c=.o)
+
+DEPS = ./include/*.h
+CC = gcc
+
+all: CoMD
+
+%.o: %.c $(DEPS)
+	$(CC) -c -o $@ $< $(INCS) $(HEAD) $(FLAGS)
+
+CoMD : $(OBJS)
+
+	$(CC) -o ../CoMD -O3 $(OBJS) $(HEAD)  $(INCS) $(LIBS)
+
+clean:
+	rm *.o 
+
