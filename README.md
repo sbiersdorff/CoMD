@@ -1,6 +1,6 @@
-# Update Coming Soon:
+# Major Update (November 6 2012)
 
-Full functionality discussed at the Deep Dive will be available soon. Thanks for your pateince.
+The new version includes various updates. Major additions are the ability to initialize a FCC lattice with a deformation gradient, Chebyshev evaluation of EAM tables, computation of virial stress and variable box factor. See below for more detail.
 
 # CoMD: A Molecular Dynamics Proxy Applications Suite
 
@@ -20,6 +20,9 @@ CoMD allows the user to use either the Lennard-Jones potential or the Embedded A
 
 All other variants such as `src-viz` and `src-ocl` build off this.
 
+The default is now to generate an FCC lattice, of size 20x20x20 lattice constants, for a total of 32,000 atoms. The lattice is automatically scaled according to the potential chosen. The atoms are assigned to cubic link cells, the size of which can be controlled by the '-b' box-factor parameter. Increasing the box factor forms larger link cells with more partcles, which may improve performance on some architectures.
+
+When EAM potentials are used, the code generates a set of corresponding Chebyshev coefficients from the table data. The choice of using the EAM table lookup or the Chebyshev reconstruction is controlled by the `USE_CHEBY` flag in the cmake configuration step.
 
 ## Quickstart
 
@@ -41,14 +44,15 @@ Several options are available in ccmake, including:
    * toggle VTK use for viz
    * toggle viz interop (for OpenCL version)
    * toggle approximate centrosymmetry computation in viz
-
-Running (EAM):
-
-    ./CoMD -p ag -e -f data/8k.inp.gz
+   * toggle the use of Chebyshev coefficients to compute the EAM values
 
 Running (LJ):
 
-    ./CoMD -f data/8k.inp.gz
+    ./CoMD 
+
+Running (EAM):
+
+    ./CoMD -e
 
 Running OpenCL
 
@@ -60,10 +64,10 @@ Command line parameters are:
  * `-f <filename>` : the name of the input file
  * `-e` : use EAM potentials
  * `-p <potname>` : name of the EAM potential
- * `-d <potdir>` : directory where EAM potential files reside
  * `-z` : disable periodic boundary conditions
- * `-x Nx -y Ny -z Nz` : create an FCC lattice with the given dimensions (in lattice cell dimensions).
- * `-s defgrad` : perform a 1D stretch (in x) of the domain with the specified deformation gradient.
+ * `-x <Nx> -y <Ny> -z <Nz>` : create an FCC lattice with the given dimensions (in lattice cell dimensions).
+ * `-s <defgrad>` : perform a 1D stretch (in x) of the domain with the specified deformation gradient.
+ * `-b <boxfactor>` : set the minimum box factor for the link cells. Must be > 1.0
 
 Additional command line parameters for the OpenCL version:
 
