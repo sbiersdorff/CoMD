@@ -15,9 +15,6 @@ PREC_FLAG = -DSINGLE
 
 FLAGS = $(PREC_FLAG) $(CHEBY_FLAG) -DGZIPSUPPORT
 
-#INCS = {path to opencl.h}
-#LIBS = {path to libopencl.so}
-
 # gzip library
 #
 LIBS = -lz
