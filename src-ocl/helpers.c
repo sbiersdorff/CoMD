@@ -44,13 +44,13 @@ void dummy_test()
 {
     cl_float4 dummy;
 
-//#if defined (__APPLE__) || defined(MACOSX)
+#if defined (__APPLE__) || defined(MACOSX)
     //dummy[0] = 1.0;
     //dummy[1] = 1.0;
-//#else
+#else
     dummy.x = 1.0;
     dummy.y = 1.0;
-//#endif
+#endif
 }
 
 void printArray(real_t* array, int n, char *name)
@@ -171,7 +171,6 @@ void printStateAoS(
         for (iatom=0;iatom<sim_H.grid.n_atoms[ibox];iatom++) {
 
             i = ibox*MAXATOMS + iatom;
-            /*
 #if defined (__APPLE__) || defined(MACOSX)
             printf("%02d, %02d, "
 	    "X=(%+020.12e %+020.12e %+020.12e) 1 "
@@ -182,7 +181,6 @@ void printStateAoS(
                     sim_H.p[i][0],sim_H.p[i][1],sim_H.p[i][2],
                     sim_H.f[i][0],sim_H.f[i][1],sim_H.f[i][2]);
 #else
-*/
             printf("%02d, %02d, "
 	    "X=(%+020.12e %+020.12e %+020.12e) 1 "
 	    "P=(%+020.12e %+020.12e %+020.12e) "
@@ -191,7 +189,7 @@ void printStateAoS(
                     sim_H.r[i].x,sim_H.r[i].y,sim_H.r[i].z,
                     sim_H.p[i].x,sim_H.p[i].y,sim_H.p[i].z,
                     sim_H.f[i].x,sim_H.f[i].y,sim_H.f[i].z);
-//#endif
+#endif
 	    atom_count ++;
         }
 	ibox ++;
@@ -1214,17 +1212,15 @@ void initHostSimAoS (host_sim_AoS_t *sim_H, simflat_t *sim)
 
         sim_H->grid.n_atoms[ibox] = sim->natoms[ibox];
 
-        /*
 #if defined (__APPLE__) || defined(MACOSX)
         sim_H->grid.r_box[ibox][0] = sim->dcenter[ibox][0];
         sim_H->grid.r_box[ibox][1] = sim->dcenter[ibox][1];
         sim_H->grid.r_box[ibox][2] = sim->dcenter[ibox][2];
 #else
-*/
         sim_H->grid.r_box[ibox].x = sim->dcenter[ibox][0];
         sim_H->grid.r_box[ibox].y = sim->dcenter[ibox][1];
         sim_H->grid.r_box[ibox].z = sim->dcenter[ibox][2];
-//#endif
+#endif
 
         int j;
         sim_H->grid.n_neighbors[ibox] = nbrBoxes[-1];
@@ -1235,7 +1231,6 @@ void initHostSimAoS (host_sim_AoS_t *sim_H, simflat_t *sim)
         for(iatom=0;iatom<sim->natoms[ibox];iatom++) {
 
             ioff = ibox*MAXATOMS + iatom;
-            /*
 #if defined (__APPLE__) || defined(MACOSX)
             sim_H->r[ioff][0] = sim->r[ioff][0];
             sim_H->r[ioff][1] = sim->r[ioff][1];
@@ -1249,7 +1244,6 @@ void initHostSimAoS (host_sim_AoS_t *sim_H, simflat_t *sim)
             sim_H->f[ioff][1] = sim->f[ioff][1];
             sim_H->f[ioff][2] = sim->f[ioff][2];
 #else
-*/
             sim_H->r[ioff].x = sim->r[ioff][0];
             sim_H->r[ioff].y = sim->r[ioff][1];
             sim_H->r[ioff].z = sim->r[ioff][2];
@@ -1261,7 +1255,7 @@ void initHostSimAoS (host_sim_AoS_t *sim_H, simflat_t *sim)
             sim_H->f[ioff].x = sim->f[ioff][0];
             sim_H->f[ioff].y = sim->f[ioff][1];
             sim_H->f[ioff].z = sim->f[ioff][2];
-//#endif
+#endif
         }
 
         for (j=0;j<3;j++) {
