@@ -5,13 +5,10 @@
   float to double in each kernel file individually.
   **/
 
-
-
-#define N_MAX_ATOMS 64
 #define N_MAX_NEIGHBORS 27
 #define PERIODIC 1
 
-#define ALLOW_PRINTF 0
+#define KERN_DIAG 0
 
 #if defined(cl_khr_fp64)  // Khronos extension available?
 #pragma OPENCL EXTENSION cl_khr_fp64 : enable
@@ -21,77 +18,151 @@
 
 /* CL_REAL_T is set to single or double depending on compile time flags */
 typedef CL_REAL_T real_t; 
-//#pragma OPENCL EXTENSION cl_amd_fp64 : enable
+typedef CL_REAL4_T real3_t; 
+
 
 __kernel void AdvanceVelocity (
         __global real_t* px,
         __global real_t* py,
         __global real_t* pz,
-        const __global real_t* fx,
-        const __global real_t* fy,
-        const __global real_t* fz,
-        const __global int* n_atoms,
+        __global const real_t* fx,
+        __global const real_t* fy,
+        __global const real_t* fz,
+        __global const int* n_atoms,
         const real_t dt
         )
 
 {
-    int i_atom = get_global_id(0);
+    int iatom = get_global_id(0);
     int ibox = get_global_id(1);
 
     int offset = get_global_size(0);
+    int ioff = iatom + offset*ibox;
 
     real_t dt_local = dt;
 
-#if(ALLOW_PRINTF) 
-    if (n_atoms[ibox] > 0) 
-        printf("%d, %d, %d\n", ibox, i_atom, n_atoms[ibox]);
+#if(KERN_DIAG > 0) 
+    if (iatom == 0 && ibox == 0) printf(" AV dt = %e\n", dt);
+
+    if (n_atoms[ibox] > 0) printf("%d, %d, %d\n", ibox, iatom, n_atoms[ibox]);
 #endif
 
-    if (i_atom < n_atoms[ibox]) {
-        px[i_atom + offset*ibox] -= dt_local*fx[i_atom + offset*ibox];
-        py[i_atom + offset*ibox] -= dt_local*fy[i_atom + offset*ibox];
-        pz[i_atom + offset*ibox] -= dt_local*fz[i_atom + offset*ibox];
+    if (iatom < n_atoms[ibox]) {
+        px[ioff] -= dt_local*fx[ioff];
+        py[ioff] -= dt_local*fy[ioff];
+        pz[ioff] -= dt_local*fz[ioff];
     }
 
 }
 
 __kernel void AdvancePositions (
-        const __global real_t* px,
-        const __global real_t* py,
-        const __global real_t* pz,
+        __global const real_t* px,
+        __global const real_t* py,
+        __global const real_t* pz,
         __global real_t* x_pos,
         __global real_t* y_pos,
         __global real_t* z_pos,
-        const __global real_t* mass,
-        const __global int* n_atoms,
+        //__global const real_t* mass,
+        __global const int* n_atoms,
         const real_t rmass,
         const real_t dt
         )
 
 {
-    int i_atom = get_global_id(0);
+    int iatom = get_global_id(0);
     int ibox = get_global_id(1);
 
-    int offset = N_MAX_ATOMS; //get_global_size(0);
+    int offset = get_global_size(0);
+    int ioff = iatom + offset*ibox;
 
-#if(ALLOW_PRINTF) 
-    if (n_atoms[ibox] > 0) 
-        printf("%d, %d, %d\n", ibox, i_atom, n_atoms[ibox]);
+#if(KERN_DIAG > 0) 
+
+    if (n_atoms[ibox] > 0) printf("%d, %d, %d\n", ibox, iatom, n_atoms[ibox]);
 #endif
 
     real_t dt_local = dt/rmass; 
 
-#if(ALLOW_PRINTF) 
-    printf("%f, %f, %f\n", dt_local, dt, rmass);
+#if(KERN_DIAG > 0) 
+    if (iatom == 0 && ibox == 0) printf(" AP dt = %e\n", dt_local);
+    if (iatom == 0 && ibox == 0) printf("%f, %f, %f\n", dt_local, dt, rmass);
 #endif
 
-    if (i_atom < n_atoms[ibox]) {
-        x_pos[i_atom + offset*ibox] += dt_local*px[i_atom + offset*ibox];
-        y_pos[i_atom + offset*ibox] += dt_local*py[i_atom + offset*ibox];
-        z_pos[i_atom + offset*ibox] += dt_local*pz[i_atom + offset*ibox];
+    if (iatom < n_atoms[ibox]) {
+        x_pos[ioff] += dt_local*px[ioff];
+        y_pos[ioff] += dt_local*py[ioff];
+        z_pos[ioff] += dt_local*pz[ioff];
 
-#if(ALLOW_PRINTF) 
-        printf("%d, %d, %f, %f, %f\n", ibox, i_atom, x_pos[i_atom + offset*ibox], y_pos[i_atom + offset*ibox], z_pos[i_atom + offset*ibox]);
+#if(KERN_DIAG > 0) 
+    if (iatom == 0 && ibox == 0) printf("%d, %d, %f, %f, %f\n", ibox, iatom, x_pos[ioff], y_pos[ioff], z_pos[ioff]);
+#endif
+    }
+
+}
+
+__kernel void AdvanceVelocityAoS (
+        __global real3_t* p,
+        __global const real3_t* f,
+        __global const int* n_atoms,
+        const real_t dt
+        )
+
+{
+    int iatom = get_global_id(0);
+    int ibox = get_global_id(1);
+
+    int offset = get_global_size(0);
+    int ioff = iatom + offset*ibox;
+
+    real3_t dt_local = {dt, dt, dt, 0.0};
+    //real3_t dt_local = {0.0, 0.0, 0.0, 0.0};
+
+#if(KERN_DIAG > 0) 
+    if (iatom == 0 && ibox == 0) printf("AoS AV dt = %e\n", dt);
+
+    if (n_atoms[ibox] > 0) printf("%d, %d, %d\n", ibox, iatom, n_atoms[ibox]);
+#endif
+
+    if (iatom < n_atoms[ibox]) {
+        p[ioff] -= dt_local*f[ioff];
+    }
+
+}
+
+__kernel void AdvancePositionsAoS (
+        __global const real3_t* p,
+        __global real3_t* pos,
+        //__global const real_t* mass,
+        __global const int* n_atoms,
+        const real_t rmass,
+        const real_t dt
+        )
+
+{
+    int iatom = get_global_id(0);
+    int ibox = get_global_id(1);
+
+    int offset = get_global_size(0);
+    int ioff = iatom + offset*ibox;
+
+#if(KERN_DIAG > 0) 
+    if (iatom == 0 && ibox == 0) printf("AoS AP dt = %e\n", dt);
+
+    if (n_atoms[ibox] > 0) printf("%d, %d, %d\n", ibox, iatom, n_atoms[ibox]);
+#endif
+
+    real_t rdt = dt/rmass;
+
+    real3_t dt_local = {rdt, rdt, rdt, 0.0};
+
+#if(KERN_DIAG > 0) 
+    if (iatom == 0 && ibox == 0) printf("%e, %e, %e\n", dt_local.x, dt, rmass);
+#endif
+
+    if (iatom < n_atoms[ibox]) {
+        pos[ioff] += dt_local*p[ioff];
+
+#if(KERN_DIAG > 0) 
+    if (iatom == 0 && ibox == 0) printf("%d, %d, %f, %f, %f\n", ibox, iatom, pos[ioff].x, pos[ioff].y, pos[ioff].z);
 #endif
     }
 

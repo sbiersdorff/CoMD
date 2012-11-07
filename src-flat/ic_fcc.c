@@ -47,40 +47,98 @@
 
 */
 
-#ifndef __PMD_H_
-#define __PMD_H_
 
+#include <sys/types.h>
+#include <sys/stat.h>
 #include <unistd.h>
-#include <stdlib.h>
-#include <stdio.h>
-#include <string.h>
-#include <math.h>
+#include <float.h>
 #include <time.h>
 
-#include "mytype.h"
-#include "constants.h"
-#include "mycommand.h"
-#include "pmdTypes.h"
-#include "eamTypes.h"
-#include "ljTypes.h"
-#include "domains.h"
+#include "pmd.h"
+#include "utility.h"
+#include "ic_fcc.h"
 
-#define DEBUGLEVEL 0
-#define DIAG_LEVEL 0
-#define PMDDEBUGPRINTF(xxx,...) {if(xxx>DEBUGLEVEL) printf(__VA_ARGS__);}
-#define fPMDDEBUGPRINTF(xxx,...) {if(xxx>DEBUGLEVEL) fprintf(__VA_ARGS__);}
+#define DOICTIMERS 4
 
-extern void writeClsman(simflat_t *s, char *fname);
-extern void printIt(simflat_t *s,FILE *fp);
+simflat_t *create_fcc_lattice(command_t cmd, struct pmd_base_potential_t *pot) {
+    /**
+     * Creates an fcc lattice with nx * ny * nz unit cells and lattice constant lat
+     *
+     **/
+    int nx = cmd.nx;
+    int ny = cmd.ny;
+    int nz = cmd.nz;
+    real_t lat = cmd.lat;
+    real_t defgrad = cmd.defgrad;
+    real_t boxfactor = cmd.bf;
 
-extern double nTimeSteps(int n, simflat_t *s, real_t dt);
-
-/* utility routines */
-extern void breakinme();
-extern void simulationAbort(int ineCode, char *inmsg);
-extern double timeNow();
-extern int computeForce(simflat_t *s);
-//extern void *do_compute_work(SimThreadData *data);
-extern simflat_t *initSimFromCmdLine(int argc, char **argv);
-
+    simflat_t *s = NULL;
+    int     i, j, k, n, itype, natoms;
+    real_t  x, y, z, halflat;
+#ifdef DOICTIMERS  
+    clock_t start,old,count=0;
+    real2_t fx,fy,fz, px,py,pz;
+    fx=fy=fz=px=py=pz=0.0;
 #endif
+
+#ifdef DOICTIMERS  
+    start = clock();
+#endif
+    s = blankSimulation(pot);
+    if ( ! s ) simulationAbort(-50,(char *) "Unable to create Simulation data structure");
+
+    /* Optional simulation comment (blank for now) */
+    s->comment = (char*)suAlignedCalloc(1024*sizeof(char));
+
+    natoms = 4*nx*ny*nz;
+    halflat = lat / 2.0;
+
+    /* periodic  boundaries  */
+    memset(s->bounds,0,sizeof(real3));
+    memset(s->boxsize,0,sizeof(real3));
+    // stretch in x direction
+    s->defgrad = defgrad;
+    s->bounds[0] = nx * lat * defgrad;
+    s->bounds[1] = ny * lat;
+    s->bounds[2] = nz * lat;
+
+    s->bf = boxfactor;
+
+#if DOICTIMERS  >2
+    old = clock();
+#endif
+    allocDomains(s);
+
+#if DOICTIMERS  >2
+    count = clock()-old+count;
+#endif
+    i = j = k = n = 0;
+    z = lat / 4.0;
+    while (z < s->bounds[2]) {
+	y = lat / 4.0;
+	while (y < s->bounds[1]) {
+	    x = lat * defgrad / 4.0;
+	    while (x < s->bounds[0]) {
+		if ((i+j+k) % 2)
+		    putAtomInBox(s,n++,1,1,s->pot->mass,x,y,z,px,py,pz,fx,fy,fz);
+		x += halflat * defgrad;
+		i++;
+	    }
+	    y += halflat;
+	    j++;
+	}
+	z += halflat;
+	k++;
+    }
+
+#ifdef DOICTIMERS  
+    old = clock();
+#endif
+    if(DOICTIMERS) printf("\n    ---- FCC initial condition took %.2gs for %d atoms\n\n",
+	    (float)(old-start)/(float)(CLOCKS_PER_SEC), n);
+
+    return s;
+}
+
+
+

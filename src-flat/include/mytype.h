@@ -55,11 +55,13 @@ typedef double real2_t; /**< used where converting from double to single -- see 
 
 /** \def SINGLE determines whether single or double precision is built **/
 #ifdef SINGLE
-typedef float real_t;/**< define native type for cruft as single **/
+typedef float real_t;/**< define native type for CoMD as single **/
   #define FMT1 "%g" /**< /def format argument for floats **/
+  #define EMT1 "%e" /**< /def format argument for eng floats **/
 #else
-typedef double real_t; /**< define native type for cruft as double **/
+typedef double real_t; /**< define native type for CoMD as double **/
   #define FMT1 "%lg" /**< \def format argument for doubles **/
+  #define EMT1 "%le" /**< \def format argument for eng doubles **/
 #endif
 
 typedef real_t real3[3]; /**< a convenience vector with three real_t **/

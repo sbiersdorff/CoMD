@@ -48,6 +48,20 @@
  */
 
 #include "pmd.h"
+#include "cheby.h"
+#include "ic_fcc.h"
+#include "docompute.h"
+#include "read.h"
+
+void printArray(real_t* array, int n, char *name)
+{
+    int i;
+    printf("%s;\n", name);
+    for (i=0;i<n;i++){
+        printf("%d, %17.9e\n", i, array[i]);
+    }
+}
+
 
 simflat_t *initSimFromCmdLine(int argc, char **argv) {
     command_t cmd;
@@ -60,6 +74,8 @@ simflat_t *initSimFromCmdLine(int argc, char **argv) {
     /* get command line params */
     parseCommandLine(&cmd, argc, argv);
 
+    printCmd(&cmd);
+
     /* decide whether to get LJ or EAM potentials */
     if(cmd.doeam) 
     {
@@ -71,33 +87,76 @@ simflat_t *initSimFromCmdLine(int argc, char **argv) {
 
     if ( ! pot ) simulationAbort(-2,(char *) "Unable to initialize potential");
 
-    /* Read in file */
-    printf("\n\n    File is __%s__\n\n", cmd.filename);
-    sim = fromFileASCII(cmd.filename, pot);
-    if ( ! sim ) simulationAbort(-3,(char *) "Input file does not exist");
-
-    printf("    total atoms is: %d\n", sim->ntot);
-
     printf("Simulation data\n");
     if (cmd.doeam) {
         eampotential_t *new_pot;
         new_pot = (eampotential_t*) pot;
         printf("EAM potential values:\n");
-        printf("cutoff = %e\n", new_pot->cutoff);
-        printf("mass = %e\n", new_pot->mass);
+        printf("cutoff = "EMT1"\n", new_pot->cutoff);
+        printf("mass = "EMT1"\n", new_pot->mass);
         printf("phi potential:\n");
         printf("n = %d\n", new_pot->phi->n);
+        cmd.lat = new_pot->lat;
+        printf("cmd.lat = "EMT1"\n", cmd.lat);
+        printf("%e, %e\n", new_pot->phi->x0, new_pot->phi->xn);
+#if (DIAG_LEVEL > 1)
+        printf("x0 = "EMT1"\n", new_pot->phi->x0);
+        printf("xn = "EMT1"\n", new_pot->phi->xn);
+        printArray(new_pot->phi->values, new_pot->phi->n, "phi ref");
+        printArray(new_pot->rho->values, new_pot->rho->n, "rho ref");
+        printArray(new_pot->f->values, new_pot->f->n, "f ref");
+#endif
     } else {
         ljpotential_t *new_pot;
         new_pot = (ljpotential_t*) pot;
         printf("LJ potential values:\n");
-        printf("cutoff = %e\n", new_pot->cutoff);
-        printf("mass = %e\n", new_pot->mass);
+        printf("cutoff = "EMT1"\n", new_pot->cutoff);
+        printf("mass = "EMT1"\n", new_pot->mass);
+        cmd.lat = 1.122462048*new_pot->cutoff ;// * 1.53;      // This is for Lennard-Jones
     }
+
+    if(strcmp(cmd.filename, "")) {
+        /* Read in file */
+        printf("\n\n    File is __%s__\n\n", cmd.filename);
+        sim = fromFileASCII(cmd, pot);
+        if ( ! sim ) simulationAbort(-3,(char *) "Input file does not exist");
+    } else {
+        printf("cmd.lat = "EMT1"\n", cmd.lat);
+        sim = create_fcc_lattice(cmd, pot);
+    }
+
+    if (cmd.doeam) {
+        eampotential_t *new_pot = (eampotential_t*) pot;
+        printf("%e, %e\n", new_pot->phi->x0, new_pot->phi->xn);
+        sim->ch_pot = setChebPot(new_pot, 32);
+#if (DIAG_LEVEL > 0)
+        printf("Chebychev coefficients:\n");
+        fflush(stdout);
+        printf("%d, %d, %d\n", 
+                sim->ch_pot->phi->n,
+                sim->ch_pot->rho->n,
+                sim->ch_pot->f->n);
+        fflush(stdout);
+
+        printArray(sim->ch_pot->phi->values, sim->ch_pot->phi->n, "phi");
+        printArray(sim->ch_pot->rho->values, sim->ch_pot->rho->n, "rho");
+        printArray(sim->ch_pot->f->values,   sim->ch_pot->f->n,   "f");
+        printArray(sim->ch_pot->dphi->values, sim->ch_pot->dphi->n, "dphi");
+        printArray(sim->ch_pot->drho->values, sim->ch_pot->drho->n, "drho");
+        printArray(sim->ch_pot->df->values,   sim->ch_pot->df->n,   "df");
+#endif
+    }
+
+    printf("    total atoms is: %d\n", sim->ntot);
+    printf("box factor is ("EMT1", "EMT1", "EMT1")\n", 
+            sim->boxsize[0]/pot->cutoff,
+            sim->boxsize[1]/pot->cutoff,
+            sim->boxsize[2]/pot->cutoff);
 
     /* initial output for consistency check */
     reBoxAll(sim);
 
+    printf("Initialization finished\n");
     return sim;
 }
 
@@ -111,6 +170,18 @@ void *do_compute_work(SimThreadData *data)
     int nsteps = 10;
     double dt;
 
+#if (DIAG_LEVEL > 1)
+    printf("Chebychev coefficients:\n");
+    fflush(stdout);
+    printf("%d, %d, %d\n", 
+            data->sim->ch_pot->phi->n,
+            data->sim->ch_pot->rho->n,
+            data->sim->ch_pot->f->n);
+    fflush(stdout);
+#endif
+
+    printf("Starting simulation\n");
+    fflush(stdout);
     ts = timeNow();
     computeForce(data->sim); 
     te = timeNow();
@@ -118,6 +189,8 @@ void *do_compute_work(SimThreadData *data)
     /* convert the timestep */
     dt = 1.0e-15;
 
+    printf("Starting timesteps\n");
+    fflush(stdout);
     for(iter=0; iter<niter; iter++) {
         double ns;
         ns = (iter==0?1.0:(double)(1+nsteps));
@@ -127,6 +200,7 @@ void *do_compute_work(SimThreadData *data)
          */
         printf(" %3d %30.20g computed in %.3fs (%8.4f us/atom for %d atoms)\n",
                 iter*nsteps, data->sim->e,(te-ts),1.0e6*(te-ts)/(double)ns/(double)data->sim->ntot,data->sim->ntot);
+        printf("Virial stress = %g\n", data->sim->stress);
         ts = timeNow();
         eone = nTimeSteps(nsteps,data->sim,dt);
         te = timeNow();

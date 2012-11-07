@@ -144,6 +144,9 @@ int LJ(void *inS) {
 
   s6 = sigma*sigma*sigma*sigma*sigma*sigma;
 
+  //virial stress added here
+  s->stress = 0.0;
+
 
   for(ibox=0; ibox<s->nboxes; ibox++) { /* loop over all boxes in system */
     nIBox = s->natoms[ibox];
@@ -169,6 +172,7 @@ int LJ(void *inS) {
 	  
       for(ioff=ibox*MAXATOMS,ii=0; ii<nIBox; ii++,ioff++) { /* loop over atoms in ibox */
 	int joff;
+        s->stress -= s->p[ioff][0]*s->p[ioff][0]/s->mass[ioff];
 	int i = s->id[ioff];  /* the ij-th atom in ibox */
 	for(joff=MAXATOMS*jbox,ij=0; ij<nJBox; ij++,joff++) { /* loop over atoms in ibox */
 	  int m;
@@ -203,6 +207,7 @@ int LJ(void *inS) {
 	    s->f[ioff][m] += dr[m]*fr;
 	    s->f[joff][m] -= dr[m]*fr;
 	  }
+          s->stress += 2.0*fr*dr[0]*dr[0];
 	} /* loop over atoms in jbox */
       } /* loop over atoms in ibox */
     } /* loop over neighbor boxes */
@@ -211,6 +216,10 @@ int LJ(void *inS) {
 
   etot = etot*4.0*epsilon*s6;
   s->e = (real_t) etot;
+
+  // renormalize stress
+  s->stress = s->stress/(s->bounds[0]*s->bounds[1]*s->bounds[2]);
+
   return 0;
 }
       

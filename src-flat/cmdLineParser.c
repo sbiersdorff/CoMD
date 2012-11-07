@@ -151,7 +151,15 @@ int addArg(char *longOption,char shortOption, int has_arg, char type, void *data
   }
   return 0;
 }
-void freeArgs() {while(myargs) {myargs = myOptionFree(myargs);} return;}
+
+
+void freeArgs() {
+    while(myargs) {
+        myargs = myOptionFree(myargs);
+    } 
+    return;
+}
+
 void printArgs() {
   myOption_t *o = myargs;
   char s[4096];
@@ -225,7 +233,7 @@ void processArgs(int argc, char **argv) {
 	sscanf(optarg,"%f",(float *)o->ptr);
 	break;
       case 'd':
-	sscanf(optarg,"%lf",(double *)o->ptr);
+        sscanf(optarg,"%lf",(double *)o->ptr);
 	break;
       case 's':
 	strncpy((char*)o->ptr,(char*)optarg,o->sz);

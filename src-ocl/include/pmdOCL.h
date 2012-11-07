@@ -23,9 +23,6 @@
 extern simflat_t *blankSimulation(struct pmd_base_potential_t *pot);
 extern void destroySimulation(simflat_t **s);
 
-extern simflat_t *fromFileASCII(char *filename, struct pmd_base_potential_t *pot);
-extern simflat_t *fromFileGzip(char *filename, struct pmd_base_potential_t *pot);
-
 extern void writeClsman(simflat_t *s, char *fname);
 extern void printIt(simflat_t *s,FILE *fp);
 

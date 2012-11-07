@@ -56,7 +56,8 @@ ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #ifndef __EAM_TYPES_H_
 #define __EAM_TYPES_H_
 
-#include "pmd.h"
+//#include "pmd.h"
+#include "mytype.h"
 
 /**
  * EAM uses interpolation.  We store interpolation tables in a struct
@@ -96,10 +97,23 @@ typedef struct eampotential_t {
   struct potentialarray_t *phi; /**< the phi array **/
   struct potentialarray_t *rho; /**< the rho array **/
   struct potentialarray_t *f;   /**< the F array   **/
+  real_t lat;           /**< lattice constant **/
 } eampotential_t;
+
+// the Chebychev 'potential' is based on the EAM potential type
+typedef struct eam_cheby_t {
+  real_t cutoff;       /**< the potential cutoff distance **/
+  real_t mass;           /**< mass of atoms **/
+  struct potentialarray_t *phi; /**< the phi array **/
+  struct potentialarray_t *rho; /**< the rho array **/
+  struct potentialarray_t *f;   /**< the F array   **/
+  struct potentialarray_t *dphi; /**< the phi array **/
+  struct potentialarray_t *drho; /**< the rho array **/
+  struct potentialarray_t *df;   /**< the F array   **/
+  real_t lat;           /**< lattice constant **/
+} eam_cheby_t;
 
 
 extern struct pmd_base_potential_t *setEamPot(char *dir, char *file);
-
 
 #endif

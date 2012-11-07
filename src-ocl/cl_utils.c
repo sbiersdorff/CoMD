@@ -30,6 +30,7 @@
 
 #if (RUNTIME_API)
 
+/*
 typedef struct float4
 {
   float x,y,z,w;
@@ -38,6 +39,7 @@ typedef struct float3
 {
   float x,y,z,w;
 } float3;
+*/
 
 cl_uint          num_platforms;
 cl_platform_id*  platform_id; 
@@ -89,18 +91,31 @@ int BuildProgramFromFile(cl_program* program,
     }
 
     // define the right type for the code
-    {
-      const char *srcPrec = "CL_REAL_T";
+    //{
+      const char *srcPrec  = "CL_REAL_T";
+      const char *srcPrec4 = "CL_REAL4_T";
 #ifdef SINGLE
-      const char myPrec[128] =  "float    "; /* note padded with zeros to length of srcPrec */
+      const char myPrec[128]  =  "float    "; /* note padded with zeros to length of srcPrec */
+      const char myPrec4[128] =  "float4    "; /* note padded with zeros to length of srcPrec4 */
 #else
-      const char myPrec[128] =  "double   ";  /* note padded with zeros to length of srcPrec */
+      const char myPrec[128]  =  "double   ";  /* note padded with zeros to length of srcPrec */
+      const char myPrec4[128] =  "double4   ";  /* note padded with zeros to length of srcPrec4 */
 #endif
       char *mydef = source;
+      int rep_count = 0;
+      while((mydef = strstr(mydef,srcPrec4)) != NULL) {
+	strncpy(mydef,myPrec4,strlen(srcPrec4));
+        rep_count +=1;
+      }
+      mydef = source;
+      printf("Replaced %d instances of %s with %s in %s\n", rep_count, srcPrec4, myPrec4, filename);
       while((mydef = strstr(mydef,srcPrec)) != NULL) {
 	memcpy(mydef,myPrec,strlen(srcPrec));
+        rep_count +=1;
       }
-    }
+      printf("Replaced %d instances of %s with %s in %s\n", rep_count, srcPrec, myPrec, filename);
+      rep_count = 0;
+    //}
     
     // Create the compute program from the source buffer
     //
@@ -136,6 +151,7 @@ int oclInit(int gpu_request)
     int i;
     char device_name[80];
 
+   printf("************************************************************************\n");
     printf("Initializing OpenCL...\n");
 
     // Query the number of platforms
@@ -253,6 +269,14 @@ int oclInit(int gpu_request)
     size_t max_work_group_size;
     err = clGetDeviceInfo(device_id , CL_DEVICE_MAX_WORK_GROUP_SIZE, sizeof(size_t), &max_work_group_size, NULL);
     printf("Maximum work group size is %lu \n", (max_work_group_size));
+
+    cl_uint max_compute_units;
+    err = clGetDeviceInfo(device_id , CL_DEVICE_MAX_COMPUTE_UNITS, sizeof(cl_uint), &max_compute_units, NULL);
+    printf("Maximum compute units is %u \n", (max_compute_units));
+
+    cl_uint max_clock_freq;
+    err = clGetDeviceInfo(device_id , CL_DEVICE_MAX_CLOCK_FREQUENCY, sizeof(cl_uint), &max_clock_freq, NULL);
+    printf("Maximum clock freq is %u \n", (max_clock_freq));
 
     // Create a compute context 
     printf("Creating a compute context\n");

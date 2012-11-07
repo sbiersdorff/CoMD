@@ -29,7 +29,7 @@
  *
  *
  **/
-extern int addArg(char *longOption,char shortOption, int has_arg, char type, void *dataPtr, int dataSize, char *help);
+int addArg(char *longOption,char shortOption, int has_arg, char type, void *dataPtr, int dataSize, char *help);
 
 /**
  *   extern void processArgs(int argc, char **argv);
@@ -37,7 +37,7 @@ extern int addArg(char *longOption,char shortOption, int has_arg, char type, voi
  * Call this to process your arguments.
  * Note that this also frees any arguments added, so you can only call this once
  **/
-extern void processArgs(int argc, char **argv);
+void processArgs(int argc, char **argv);
 
 /**
  * extern void printArgs();
@@ -46,7 +46,7 @@ extern void processArgs(int argc, char **argv);
  **/
 extern void printArgs();
 
-
+void freeArgs();
 
 /**
  * an example

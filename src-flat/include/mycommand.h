@@ -54,7 +54,9 @@ ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  **/
 #ifndef MYCOMMAND_H
 #define MYCOMMAND_H
+
 #include "mytype.h"
+
 typedef struct command_t {
   char filename[1024];/**< the input file name **/
   char potdir[1024];  /**< the directory where eam potentials reside **/
@@ -63,6 +65,13 @@ typedef struct command_t {
   int doeam;          /**< a flag to determine whether we're running EAM potentials **/
   int periodic;       /**< a flag that controls whether periodic boundary conditions are used **/
   int usegpu;         /**< a flag that controls whether OpenCL tries to target a gpu **/
+  int nx;             /**< number of unit cells in x **/
+  int ny;             /**< number of unit cells in y **/
+  int nz;             /**< number of unit cells in z **/
+  double bf;          /**< ratio of box size to cutoff radius **/
+  double lat;         /**< lattice constant **/
+  double defgrad;     /**< deformation gradient **/
+  double temp;        /**< simulation temperature **/
 } command_t;
 
 extern void usage(char *exename);

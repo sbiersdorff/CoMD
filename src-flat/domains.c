@@ -160,8 +160,23 @@ void allocDomains(simflat_t *s) {
 
     /* decide how many boxes are needed */
     s->nboxes = 1;
+    real_t strain[3];
+    // dummy strain field
+    strain[0] = s->defgrad;
+    // temporary kluge to make Viz work
+    if (strain[0] == 0.0) strain[0]=1.0;
+    strain[1] = 1.0;
+    strain[2] = 1.0;
+    // box factor
+    
+    real_t boxfactor = s->bf;
+    if (boxfactor == 0.0) boxfactor = 1.0;
+
     for(j=0; j<3; j++) {
-        s->nbx[j] = (int)floor(s->bounds[j]/s->pot->cutoff);
+       printf("bounds = %e, cutoff = %e, box factor = %e, strain = %e\n",
+	 s->bounds[j], s->pot->cutoff, boxfactor, strain[j]);
+        s->nbx[j] = (int)floor(s->bounds[j]/(s->pot->cutoff*boxfactor*strain[j]));
+	printf("nbx(%d) = %d\n", j, s->nbx[j]);
         if (s->nbx[j] < 1) suAbort(3,(char *) "Need at least one cutoff wide domain in allocDomains()");
         s->nboxes = s->nboxes*s->nbx[j];
         s->boxsize[j] = s->bounds[j]/(real_t)s->nbx[j];

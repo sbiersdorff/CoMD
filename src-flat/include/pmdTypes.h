@@ -52,6 +52,7 @@ ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "mytype.h"
 #include "memUtils.h"
+#include "eamTypes.h"
 
 #define MAXATOMS 64
 #define SIM_NOSTATE 0
@@ -107,7 +108,6 @@ typedef struct simflat_t {
   int ntot; /**< total number of atoms**/
   real3 bounds; /**< periodic bounds**/
   real3 boxsize; /**< size of domains**/
-
   real3 *dcenter; /**< an array that contains the center of each box **/
   int *natoms;    /**< the total number of atoms in the simulation **/
   int *id;     /**< The original ID of the atom  **/
@@ -131,10 +131,17 @@ typedef struct simflat_t {
   pmd_base_potential_t *pot; /**< the potential**/
 
   char *comment; /**< free form string that describes the simulation **/
+
+// new variables to store meso-micro data. Will be tensors eventually
+  real_t stress; /**< virial stress**/
+  real_t defgrad; /**< deformation gradient**/
+  real_t bf; /**< box factor **/
+  eam_cheby_t *ch_pot; /**< Chebychev coefficients**/
+
 } simflat_t;
 
 /*
-  add-onns for visualization
+  add-ons for visualization
 */
 
 #ifdef USE_IN_SITU_VIZ

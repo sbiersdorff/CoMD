@@ -89,7 +89,6 @@ static void advancePositions(simflat_t *s, const int nStart, const int nTodo, re
   /* convert mass to atomic units */
   rmass = (real_t)(amu_to_m_e*(double)s->pot->mass);
 
-
   for(iBox=nStart; iBox<nStart+nTodo; iBox++) {
     /* loop over my boxes in system */
     int ii;

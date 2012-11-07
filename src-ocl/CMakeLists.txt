@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 2.6 FATAL_ERROR)
 
 IF(APPLE)
-  SET(EXECUTABLE_FLAG MACOSX_BUNDLE)
+  #SET(EXECUTABLE_FLAG MACOSX_BUNDLE)
 ENDIF(APPLE)
 
 if (DOUBLE_PRECISION)
@@ -18,10 +18,16 @@ if (DO_GZIP)
 endif ()
 
 if (DO_INTEROP_VIZ)
-  set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DINTEROP_VIZ")
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DINTEROP_VIZ")
 endif ()
 
 find_library(M_LIB m)
+
+if (USE_VTK)
+    find_package(VTK)
+    include(${VTK_USE_FILE})
+    set(CMAKE_INSTALL_RPATH ${VTK_DIR}/bin)
+endif ()
 
 if (DO_OCL)
     find_package(OPENCL)
@@ -37,19 +43,21 @@ if (DO_OCL)
             ../src-flat/domains.c
             ../src-flat/eam.c
             ../src-flat/ljForce.c
+            ../src-flat/ic_fcc.c
             ../src-flat/mycommand.c
             ../src-flat/read.c
+            ../src-flat/cheby.c
             ../src-flat/write.c
             ../src-flat/utility.c
             ../src-flat/timestep.c
             )
     target_link_libraries(CoMDOCL ${EXTRA_LIBS})
 if (APPLE)
-    if (DO_INTEROP_VIZ)
-      target_link_libraries(CoMDOCL stdc++ ${CMAKE_SOURCE_DIR}/src-ocl/libGLEW.a)
-    else ()
-      target_link_libraries(CoMDOCL stdc++)
-    endif ()
+if (DO_INTEROP_VIZ)
+    target_link_libraries(CoMDOCL stdc++ ${CMAKE_SOURCE_DIR}/src-ocl/libGLEW.a)
+else ()
+    target_link_libraries(CoMDOCL stdc++)
+endif ()
 else ()
     target_link_libraries(CoMDOCL stdc++ OpenCL glut GLU GLEW)
 endif ()

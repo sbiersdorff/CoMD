@@ -71,4 +71,5 @@ extern void putAtomInBox(simflat_t *s,
 			 const real2_t px,const real2_t py,const real2_t pz,
 			 const real2_t fx,const real2_t fy,const real2_t fz);
 extern void reBoxAll(simflat_t *s);
+
 #endif

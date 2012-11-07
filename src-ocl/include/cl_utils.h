@@ -17,10 +17,15 @@
 
 #ifdef SINGLE
 #define cl_real cl_float
+#define real3_t cl_float4
 #else
 #define cl_real cl_double
+#define real3_t cl_double4
 #endif
 
+// sizes of 3 and 4-vectors, respectively, (which might be padded)
+#define r3 4
+#define r4 4
 
 // OpenCL stuff to make syntax simpler for 'Runtime API' constructs
 //

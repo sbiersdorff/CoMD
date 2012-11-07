@@ -48,6 +48,8 @@ ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
 #include "pmd.h"
+#include "utility.h"
+#include "read.h"
 #include <time.h>
 
 #include <sys/types.h>
@@ -58,12 +60,17 @@ ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #define DOREADTIMERS 4
 #ifndef GZIPSUPPORT
 
-simflat_t *fromFileASCII(char *filename, struct pmd_base_potential_t *pot) {
+simflat_t *fromFileASCII(command_t cmd, struct pmd_base_potential_t *pot) {
   /**
    * Reads in a simulation from a file written by clsman.
    *
    * Initially only mode 0 files are read
    **/
+    // assign the needed parameters from the commnad struct
+
+    char *filename = cmd.filename;
+    s->bf = cmd.bf;
+
   simflat_t *s = NULL;
   FILE *fp;
   int i,itype;
@@ -104,6 +111,7 @@ simflat_t *fromFileASCII(char *filename, struct pmd_base_potential_t *pot) {
 
   fscanf(fp,FMT1 " " FMT1 " " FMT1 "\n",s->bounds,s->bounds+1,s->bounds+2);
 
+/
 #if DOREADTIMERS  >2
     old = clock();
 #endif
@@ -136,13 +144,16 @@ simflat_t *fromFileASCII(char *filename, struct pmd_base_potential_t *pot) {
 
   return s;
 }
-simflat_t *fromFileGzip(char *filename, struct pmd_base_potential_t *pot) {
+
+
+simflat_t *fromFileGzip(command_t cmd, struct pmd_base_potential_t *pot) {
   printf("    fromFileGzip(): Trying fromFileASCII()n");
-  return (fromFileASCII(filename,pot));
+  return (fromFileASCII(cmd,pot));
 }
+
 #else
 #include "zlib.h"
-simflat_t *fromFileGzip(char *filename, struct pmd_base_potential_t *pot) {
+simflat_t *fromFileGzip(command_t cmd, struct pmd_base_potential_t *pot) {
   /**
    * Reads in a simulation from a file written by clsman.
    *
@@ -152,6 +163,7 @@ simflat_t *fromFileGzip(char *filename, struct pmd_base_potential_t *pot) {
   clock_t start,old;
   int count;
 #endif
+    char *filename = cmd.filename;
   simflat_t *s = NULL;
   gzFile fp;
   int i,itype;
@@ -173,6 +185,7 @@ simflat_t *fromFileGzip(char *filename, struct pmd_base_potential_t *pot) {
     gzclose(fp);
     return s;
   }
+  s->bf = cmd.bf;
 
 
   /* read in natom and nmove */
@@ -227,12 +240,14 @@ simflat_t *fromFileGzip(char *filename, struct pmd_base_potential_t *pot) {
 #endif
   return s;
 }
-simflat_t *fromFileASCII(char *filename, struct pmd_base_potential_t *pot) {
-  return(fromFileGzip(filename,pot));
+
+simflat_t *fromFileASCII(command_t cmd, struct pmd_base_potential_t *pot) {
+  return(fromFileGzip(cmd,pot));
 }
 
 
-simflat_t *fromFileTim(char *filename, struct pmd_base_potential_t *pot) {
+simflat_t *fromFileTim(command_t cmd, struct pmd_base_potential_t *pot) {
+    char *filename = cmd.filename;
   simflat_t *s = NULL;
   FILE *fp;
   int i,itype;
@@ -258,7 +273,7 @@ simflat_t *fromFileTim(char *filename, struct pmd_base_potential_t *pot) {
   
   FileAtom* atoms = (FileAtom*)malloc(natoms*sizeof(FileAtom));
   size_t n = fread((void*)atoms, sizeof(FileAtom), natoms, fp); 
-  printf("Number of atoms: %d %d\n", natoms, n);
+  printf("Number of atoms: %d %d\n", (int)natoms, (int)n);
   fclose(fp);
 
   float minX, minY, minZ, maxX, maxY, maxZ;
@@ -282,6 +297,8 @@ simflat_t *fromFileTim(char *filename, struct pmd_base_potential_t *pot) {
   memset(s->bounds,0,sizeof(real3));
   memset(s->boxsize,0,sizeof(real3));
   s->bounds[0] = maxX;  s->bounds[1] = maxY;  s->bounds[2] = maxZ;  
+
+  s->bf = cmd.bf;
 
   allocDomains(s);
 

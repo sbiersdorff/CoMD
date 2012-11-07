@@ -62,9 +62,12 @@ ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <memory.h>
 #include <string.h>
 #include <sys/time.h>
+
 #include "pmdTypes.h"
 #include "pmd.h"
 #include "memUtils.h"
+#include "utility.h"
+
 #define offsetPtr(ptr,offset) (((char *)ptr) + offset)
 
 /* some utility routines */
@@ -82,6 +85,7 @@ int suAbort(int status,char *message) {
   breakinme();				\
   exit(status);
 }
+
 char *dupString(char *str) {
   char *s;
   s = (char*)suAlignedCalloc((strlen(str)+1)*sizeof(char));

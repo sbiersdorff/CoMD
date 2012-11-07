@@ -58,14 +58,12 @@ ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <stdlib.h>
 #include <memory.h>
 #include <string.h>
+
 #include "memUtils.h"
-
 #include "pmd.h"
-
-extern void simulationAbort(int ineCode, char *inmsg);
-extern eampotential_t *eamReadASCII(char *dir, char *potname);
-extern void eamDestroy(void **inppot);
-
+#include "cheby.h"
+#include "eam.h"
+#include "utility.h"
 
 /**
  * An endian swapping utility
@@ -95,8 +93,6 @@ extern void eamDestroy(void **inppot);
 extern int PERIODIC;
 
 struct eampotential_t *myPot = NULL;
-extern int eamForce(void *s);
-
 
 struct pmd_base_potential_t *setEamPotFromPotential(struct pmd_base_potential_t *inPot) {
   myPot = (struct eampotential_t *) inPot;
@@ -111,6 +107,7 @@ struct pmd_base_potential_t *setEamPot(char *dir, char *file) {
   if ( ! myPot) simulationAbort(-2,(char *) "Unable to read potential file\n");
   return (struct pmd_base_potential_t *) myPot;
 }
+
 struct eampotential_t *getEamPot() {
   if ( ! myPot) setEamPot((char *) "pots",(char *) "ag");
   myPot->destroy=eamDestroy;
@@ -289,6 +286,7 @@ static struct potentialarray_t *getPotentialArrayFromFile(char *file) {
   fclose(fp);
   return retArray;
 }
+
 static double getMassFromFile(char *file) {
   double mass;
   char tmp[4096];
@@ -307,6 +305,27 @@ static double getMassFromFile(char *file) {
   fgets(tmp,sizeof(tmp),fp);
   sscanf(tmp,"%lf ",&mass);
   return mass;
+}
+
+static double getLatFromFile(char *file) {
+  double lat;
+  char tmp[4096];
+  FILE *fp;
+  int n;
+  fp = fopen(file,"r");
+  if ( ! fp ) {
+    return -1.0;
+  }
+
+  /**
+   * read first two lines **/
+  fgets(tmp,sizeof(tmp),fp);
+  fgets(tmp,sizeof(tmp),fp);
+  /**
+   * get lat from third line **/
+  fgets(tmp,sizeof(tmp),fp);
+  sscanf(tmp,"%lf ",&lat);
+  return lat;
 }
 
 void eamDestroy(void **inppot) {
@@ -354,6 +373,8 @@ eampotential_t *eamReadASCII(char *dir, char *potname) {
 
   sprintf(tmp,"%s/%s.doc",dir,potname);
   retPot->mass = (real_t) getMassFromFile(tmp);
+  retPot->lat = (real_t) getLatFromFile(tmp);
+  printf("lattice constant: %e\n", retPot->lat);
 
   if ( (retPot->mass < 0.0 ) || (! (retPot->phi && retPot->rho && retPot->f )) ) {
      printf("\n\n"
@@ -419,6 +440,7 @@ int eamForce(void *inS) {
    * calculates forces for the EAM potential **/
   simflat_t *s = (simflat_t *) inS;
   eampotential_t *pot = NULL;
+  eam_cheby_t *ch_pot = s->ch_pot;
   int ii, ij, i, j, jTmp;
   real_t r2,r;
   int nIBox;
@@ -443,6 +465,22 @@ int eamForce(void *inS) {
   memset(s->fi,0,s->nboxes*MAXATOMS*sizeof(real_t));
   memset(s->rho,0,s->nboxes*MAXATOMS*sizeof(real_t));
   
+  // virial stress computation added here
+  s-> stress = 0.0;
+
+/*
+#if (USE_CHEBY) 
+    //Test to see if the data is there
+    printf("Chebychev coefficients:\n");
+    fflush(stdout);
+    printf("%d, %d, %d\n", 
+    ch_pot->phi->n,
+    ch_pot->rho->n,
+    ch_pot->f->n);
+    fflush(stdout);
+#endif
+    */
+
   for(iBox=0; iBox<s->nboxes; iBox++) { /* loop over all boxes in system */ 
 
     nIBox = s->natoms[iBox];
@@ -482,8 +520,16 @@ int eamForce(void *inS) {
 
 	  r = sqrt(r2);
 
+#if (USE_CHEBY)
+	phiTmp = eamCheb(s->ch_pot->phi, r);
+	dPhi = eamCheb(s->ch_pot->dphi, r);
+
+	rhoTmp = eamCheb(s->ch_pot->rho, r);
+	dRho = eamCheb(s->ch_pot->drho, r);
+#else 
 	  eamInterpolateDeriv(pot->phi,r,0,0,&phiTmp,&dPhi);
 	  eamInterpolateDeriv(pot->rho,r,0,0,&rhoTmp,&dRho);
+#endif
 
 	  for(k=0; k<3; k++) {
 	    s->f[ioff][k] += dPhi*dr[k]/r;
@@ -533,11 +579,17 @@ int eamForce(void *inS) {
       
     for(ioff=MAXATOMS*iBox,ii=0; ii<nIBox; ii++,ioff++) { /* loop over atoms in iBox */
       real_t fi, fiprime;
+#if (USE_CHEBY)
+	fi = eamCheb(s->ch_pot->f, s->rho[ioff]);
+	fiprime = eamCheb(s->ch_pot->df, s->rho[ioff]);
+#else
       eamInterpolateDeriv(pot->f,s->rho[ioff],0,0,&fi,&fiprime);
+#endif
       s->fi[ioff] = fiprime; /* update rhoprime */
       /* update energy terms */
       etot += (double) fi; 
       s->f[ioff][3] += fi;
+      //s->stress -= s->p[ioff][0]*s->p[ioff][0]/s->mass[ioff];
     }
   }
   for(iBox=0; iBox<s->nboxes; iBox++) { /* loop over all boxes in system */
@@ -582,7 +634,11 @@ int eamForce(void *inS) {
 
 	  r = sqrt(r2);
 
+#if (USE_CHEBY)
+	dRho = eamCheb(s->ch_pot->drho, r);
+#else
 	  eamInterpolateDeriv(pot->rho,r,0,0,&rhoTmp,&dRho);
+#endif
 	  rhoijprime = dRho;
 
 	  for(k=0; k<3; k++) {
@@ -590,6 +646,7 @@ int eamForce(void *inS) {
 	    s->f[joff][k] -= (s->fi[ioff]+s->fi[joff])*rhoijprime*dr[k]/r;
 	  }
 
+          s->stress += 2.0*(s->fi[ioff]+s->fi[joff])*rhoijprime*dr[0]/r*dr[0];
 	} /* loop over atoms in jBox */
       } /* loop over atoms in iBox */
     } /* loop over neighbor boxes */
@@ -597,13 +654,14 @@ int eamForce(void *inS) {
 
   s->e = (real_t) etot;
 
+  s->stress = s->stress/(s->bounds[0]*s->bounds[1]*s->bounds[2]);
 
   return 0;
 }
 
 
 /**
- * utility comparison routined **/
+ * utility comparison routine **/
 static void adiffpot(char *name,potentialarray_t *a, potentialarray_t *b) {
   int i;
   printf("---------------------------------------\n");

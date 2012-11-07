@@ -58,14 +58,13 @@ ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
-#include "pmd.h"
 #include <time.h>
-#include <cmdLineParser.h>
+
+#include "pmd.h"
+#include "cmdLineParser.h"
 
 /** the periodic boundary conditions flag **/
 int PERIODIC = 1;
-
-extern void freeArgs();
 
 /**
  * given a struct command_t, this function will print
@@ -78,13 +77,23 @@ void printCmd(command_t *cmd) {
 	 "   potdir = %s\n"
 	 "   potname = %s\n"
 	 "   Periodic = %d\n"
-	 "   Use gpu = %d\n",
+	 "   Use gpu = %d\n"
+	 "   Number of unit cells = %d x %d x %d\n"
+	 "   Lattice constant = %g\n"
+         "   Box factor = %g\n"
+         "   Simulation temperature = %g\n"
+         "   Deformation gradient = %g\n",
 	 cmd->filename,
 	 cmd->doeam,
 	 cmd->potdir,
 	 cmd->potname,
 	 cmd->periodic,
-	 cmd->usegpu);
+	 cmd->usegpu,
+	 cmd->nx, cmd->ny, cmd->nz,
+	 cmd->lat,
+	 cmd->bf,
+         cmd->temp,
+         cmd->defgrad);
   return;
 }
 
@@ -110,21 +119,34 @@ void parseCommandLine(command_t *cmd, int argc, char **argv) {
 #else
   strcpy(cmd->filename,"data/8k.inp");
 #endif
+  strcpy(cmd->filename,"");
   strcpy(cmd->potdir,"pots");
   strcpy(cmd->potname,"ag");
   cmd->doeam = 0;
   cmd->usegpu = 0; // set default to use host
   cmd->periodic = 1;
+  cmd->nx = 20;
+  cmd->ny = 20;
+  cmd->nz = 20;
+  cmd->bf = 1.0;
+  cmd->temp = 0.0;
+  cmd->defgrad = 1.0;
 
 
   // add arguments for processing
-  addArg((char *) "help",    'h',  0,  'i',  &(help), 0,                     (char *) "print this message");
-  addArg((char *) "infile",  'f',  1,  's',  cmd->filename,  sizeof(cmd->filename), (char *) "input file name");
-  addArg((char *) "potdir",  'd',  1,  's',  cmd->potdir,    sizeof(cmd->potdir),   (char *) "potential directory");
-  addArg((char *) "potname", 'p',  1,  's',  cmd->potname,   sizeof(cmd->potname),  (char *) "potential name");
-  addArg((char *) "doeam",   'e',  0,  'i',  &(cmd->doeam),  0,                     (char *) "compute eam potentials");
-  addArg((char *) "noperiodic", 'z',  0,  'i',  &noperiodic, 0,                     (char *) "do not use periodic bc");
-  addArg((char *) "usegpu", 'g',  0,  'i',  &(cmd->usegpu), 0,                     (char *) "use a gpu for OpenCL");
+  addArg((char *) "help",       'h',  0,  'i',  &(help), 0,                            (char *) "print this message");
+  addArg((char *) "infile",     'f',  1,  's',  cmd->filename,  sizeof(cmd->filename), (char *) "input file name");
+  addArg((char *) "potdir",     'd',  1,  's',  cmd->potdir,    sizeof(cmd->potdir),   (char *) "potential directory");
+  addArg((char *) "potname",    'p',  1,  's',  cmd->potname,   sizeof(cmd->potname),  (char *) "potential name");
+  addArg((char *) "doeam",      'e',  0,  'i',  &(cmd->doeam),  0,                     (char *) "compute eam potentials");
+  addArg((char *) "noperiodic", 'o',  0,  'i',  &noperiodic, 0,                        (char *) "do not use periodic bc");
+  addArg((char *) "usegpu",     'g',  0,  'i',  &(cmd->usegpu), 0,                     (char *) "use a gpu for OpenCL");
+  addArg((char *) "nx",         'x',  1,  'i',  &(cmd->nx), 0,                         (char *) "number of unit cells in x");
+  addArg((char *) "ny",         'y',  1,  'i',  &(cmd->ny), 0,                         (char *) "number of unit cells in y");
+  addArg((char *) "nz",         'z',  1,  'i',  &(cmd->nz), 0,                         (char *) "number of unit cells in z");
+  addArg((char *) "bf",         'b',  1,  'd',  &(cmd->bf), 0,                         (char *) "box factor");
+  addArg((char *) "defgrad",    's',  1,  'd',  &(cmd->defgrad), 0,                    (char *) "deformation gradient");
+  addArg((char *) "temp",       't',  1,  'd',  &(cmd->temp), 0,                       (char *) "temperature");
 
   processArgs(argc,argv);
   if(help) {

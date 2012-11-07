@@ -8,13 +8,11 @@
 #include <getopt.h>
 #include <pthread.h>
 
+#include "mytype.h"
 #include "pmdOCL.h"
 #include "helpers.h"
 
-
 #ifdef INTEROP_VIZ
-
-#include "glew.h"
 
 #if defined (__APPLE__) || defined(MACOSX)
 #include <GLUT/glut.h>
@@ -31,7 +29,12 @@ extern float cameraFOV;
 cl_kernel AdvanceVelocity;
 cl_kernel AdvancePosition;
 cl_kernel Viz;
-cl_kernel *force_kernels;
+cl_kernel *Force_kernels;
+
+cl_kernel AdvanceVelocityAoS;
+cl_kernel AdvancePositionAoS;
+cl_kernel VizAoS;
+cl_kernel *Force_kernelsAoS;
 
 int err;
 size_t n_local[2];
@@ -41,14 +44,17 @@ cl_event Force_event;
 cl_event AP_event;
 cl_event AV_event;
 
-real_t t_simple;
+real_t t_exec;
 real_t t_overall;
 real_t t_local;
 real_t t_dummy;
-real_t dt;
+cl_real dt;
 
 host_sim_t sim_H;
 dev_sim_t sim_D;
+
+host_sim_AoS_t sim_AoS_H;
+dev_sim_AoS_t sim_AoS_D;
 
 double ts, te;
 
@@ -59,32 +65,45 @@ int iter, ns;
 int niter, nsteps;
 
 
-void compute_iteration()
+void computeIterationSoA()
 {
+    real_t t_kern, t_enq;
+    real_t t_acc = 0.0;
+    cl_event loc_event;
     for (ns = 0;ns < nsteps; ns++) {
-        // advance particle positions dt/2
-        oclRunKernel(AdvancePosition, &AP_event, n_global, n_local);
+	// advance particle positions dt/2
+	oclRunKernel(AdvancePosition, &AP_event, n_global, n_local);
+	clWaitForEvents(1, &AP_event);
+	getElapsedTime(AP_event, &t_kern, &t_enq);
+	t_acc += t_kern;
 
-        if (DIAG_LEVEL > 0)
-            GetPrintState(sim_D, sim_H);
+	if (DIAG_LEVEL > 1)
+	    getPrintState(sim_D, sim_H);
 
-        // compute force
-        computeForceOCL(force_kernels, Force_event, n_global, n_local, eam_flag);
+	// compute force
+	computeForceOCL(Force_kernels, &Force_event, n_global, n_local, eam_flag, sim_H.ntot, &t_kern);
+	t_acc += t_kern;
 
-        if (DIAG_LEVEL > 0)
-            GetPrintState(sim_D, sim_H);
+	if (DIAG_LEVEL > 1)
+	    getPrintState(sim_D, sim_H);
 
-        // advance velocity a full timestep
-        oclRunKernel(AdvanceVelocity, &AV_event, n_global, n_local);
+	// advance velocity a full timestep
+	oclRunKernel(AdvanceVelocity, &AV_event, n_global, n_local);
+	clWaitForEvents(1, &AV_event);
+	getElapsedTime(AV_event, &t_kern, &t_enq);
+	t_acc += t_kern;
 
-        if (DIAG_LEVEL > 0)
-            GetPrintState(sim_D, sim_H);
+	if (DIAG_LEVEL > 1)
+	    getPrintState(sim_D, sim_H);
 
-        // advance particle positions dt/2
-        oclRunKernel(AdvancePosition, &AP_event, n_global, n_local);
+	// advance particle positions dt/2
+	oclRunKernel(AdvancePosition, &AP_event, n_global, n_local);
+	clWaitForEvents(1, &AP_event);
+	getElapsedTime(AP_event, &t_kern, &t_enq);
+	t_acc += t_kern;
 
-        if (DIAG_LEVEL > 0)
-            GetPrintState(sim_D, sim_H);
+	if (DIAG_LEVEL > 1)
+	    getPrintState(sim_D, sim_H);
     }
 
 #ifdef INTEROP_VIZ 
@@ -92,40 +111,135 @@ void compute_iteration()
 #endif
 
     // compute force
-    computeForceOCL(force_kernels, Force_event, n_global, n_local, eam_flag);
+    computeForceOCL(Force_kernels, &Force_event, n_global, n_local, eam_flag, sim_H.ntot, &t_kern);
 
-    printf(" after dt (-%d-): ", nsteps*iter + 1);
-    ComputePrintEnergy(sim_D, sim_H);
+    if (DIAG_LEVEL > 0)
+	getPrintState(sim_D, sim_H);
+
+    printf(" %4d ", nsteps*(iter + 1));
+    computePrintEnergy(sim_D, sim_H);
+    printf("    computed in  = %e (%e us/atom for %d atoms)\n", 
+	    t_acc,1.0e6*t_acc/(double)(sim->ntot*nsteps), sim->ntot);
 }
 
-
-void cleanup_ocl()
+void computeIterationAoS()
 {
-    GetElapsedTime(AP_event, &t_simple, &t_overall);
-    printf("Kernel AdvancePosition executed in %e secs.\n", t_simple);
-    GetElapsedTime(AV_event, &t_simple, &t_overall);
-    printf("Kernel AdvanceVelocity executed in %e secs.\n", t_simple);
+    real_t t_kern, t_enq;
+    real_t t_acc = 0.0;
+    for (ns = 0;ns < nsteps; ns++) {
+	// advance particle positions dt/2
+	oclRunKernel(AdvancePositionAoS, &AP_event, n_global, n_local);
+	clWaitForEvents(1, &AP_event);
+	getElapsedTime(AP_event, &t_kern, &t_enq);
+	t_acc += t_kern;
+
+	if (DIAG_LEVEL > 1)
+	    getPrintStateAoS(sim_AoS_D, sim_AoS_H);
+
+	// compute force
+	computeForceOCL(Force_kernelsAoS, &Force_event, n_global, n_local, eam_flag, sim_H.ntot, &t_kern);
+	t_acc += t_kern;
+
+	if (DIAG_LEVEL > 1)
+	    getPrintStateAoS(sim_AoS_D, sim_AoS_H);
+
+	// advance velocity a full timestep
+	oclRunKernel(AdvanceVelocityAoS, &AV_event, n_global, n_local);
+	clWaitForEvents(1, &AV_event);
+	getElapsedTime(AV_event, &t_kern, &t_enq);
+	t_acc += t_kern;
+
+	if (DIAG_LEVEL > 1)
+	    getPrintStateAoS(sim_AoS_D, sim_AoS_H);
+
+	// advance particle positions dt/2
+	oclRunKernel(AdvancePositionAoS, &AP_event, n_global, n_local);
+	clWaitForEvents(1, &AP_event);
+	getElapsedTime(AP_event, &t_kern, &t_enq);
+	t_acc += t_kern;
+
+	if (DIAG_LEVEL > 1)
+	    getPrintStateAoS(sim_AoS_D, sim_AoS_H);
+    }
+
+#ifdef INTEROP_VIZ 
+    //oclGraphics(Viz, sim_D, n_global, n_local);
+#endif
+
+    // compute force
+    computeForceOCL(Force_kernelsAoS, &Force_event, n_global, n_local, eam_flag, sim_H.ntot, &t_kern);
+
+    if (DIAG_LEVEL > 0)
+	getPrintStateAoS(sim_AoS_D, sim_AoS_H);
+
+    //printf(" after %4d steps: ", nsteps*(iter + 1));
+    printf(" %4d ", nsteps*(iter + 1));
+    computePrintEnergyAoS(sim_AoS_D, sim_AoS_H);
+    printf("    computed in  = %e (%e us/atom for %d atoms)\n", 
+	    t_acc,1.0e6*t_acc/(double)(sim->ntot*nsteps), sim->ntot);
+}
+
+void finishOclSoA()
+{
+    getElapsedTime(AP_event, &t_exec, &t_overall);
+    printf("Kernel AdvancePosition executed in %e secs.\n", t_exec);
+    getElapsedTime(AV_event, &t_exec, &t_overall);
+    printf("Kernel AdvanceVelocity executed in %e secs.\n", t_exec);
 
     real_t t_ref = (real_t)(te - ts);
 
-    printf("Reference elapsed time = %e (%e us/atom for %d atoms)\n", t_ref,1.0e6*t_ref/(double)(sim->ntot*niter*nsteps), sim->ntot);
+    printf("Reference wallclock elapsed time = %e (%e us/atom for %d atoms)\n", 
+	    t_ref,1.0e6*t_ref/(double)(sim->ntot*niter*nsteps), sim->ntot);
 
     // copy result back from device
     // note this utility forces synchronous copy so 
     // it does not return until the copy is complete
-    GetVec(sim_D.f, sim_H.f, sim_H.array_size);
+    getVec(sim_D.f, sim_H.f, sim_H.array_size);
     oclCopyToHost(sim_D.e, sim_H.e, sim_H.array_size);
 
-    ComputePrintEnergy(sim_D, sim_H);
+    computePrintEnergy(sim_D, sim_H);
+    printf("\n");
 
     // clean up the OpenCL memory 
     FreeSims(sim_H, sim_D);
+
+}
+
+
+void finishOclAoS()
+{
+    getElapsedTime(AP_event, &t_exec, &t_overall);
+    printf("Kernel AdvancePositionAoS executed in %e secs.\n", t_exec);
+    getElapsedTime(AV_event, &t_exec, &t_overall);
+    printf("Kernel AdvanceVelocityAoS executed in %e secs.\n", t_exec);
+
+    real_t t_ref = (real_t)(te - ts);
+
+    printf("Reference wallclock elapsed time = %e (%e us/atom for %d atoms)\n", 
+	    t_ref,1.0e6*t_ref/(double)(sim->ntot*niter*nsteps), sim->ntot);
+
+    // copy result back from device
+    // note this utility forces synchronous copy so 
+    // it does not return until the copy is complete
+    getVecAoS(sim_AoS_D.f, sim_AoS_H.f, sim_AoS_H.array_size);
+    oclCopyToHost(sim_AoS_D.e, sim_AoS_H.e, sim_AoS_H.array_size);
+
+    computePrintEnergyAoS(sim_AoS_D, sim_AoS_H);
+    printf("\n");
+
+    // clean up the OpenCL memory 
+    FreeSimsAoS(sim_AoS_H, sim_AoS_D);
 
     clReleaseEvent(AP_event);
     clReleaseEvent(AV_event);
 
     oclCleanup();
+}
 
+void runRef()
+{
+    printf("************************************************************************\n");
+    printf("Running reference simulation\n");
     // write initial state 
     writeClsman(sim,(char *) "init.bin");
 
@@ -139,62 +253,126 @@ void cleanup_ocl()
     destroySimulation(&sim);
 }
 
-
-
-void compute_init()
+void computeInitSoA()
 {
-    sim_D.rmass = (real_t)(amu_to_m_e)*(double)(sim->pot->mass);
+    printf("************************************************************************\n");
+    printf("Initializinging SoA OpenCL simulation\n");
+
+    sim_D.rmass = (cl_real)(amu_to_m_e)*(double)(sim->pot->mass);
     sim_H.eam_flag = eam_flag;
 
     if(eam_flag) {
-        force_kernels = malloc(sizeof(cl_kernel)*3);
+	Force_kernels = malloc(sizeof(cl_kernel)*3);
     } else {
-        force_kernels = malloc(sizeof(cl_kernel)*1);
+	Force_kernels = malloc(sizeof(cl_kernel)*1);
     }
 
     // set up arrays for OpenCL
 
-    HostSimInit(&sim_H, sim);
+    initHostSim(&sim_H, sim);
 
-    DevSimInit(&sim_D, sim_H);
+    initDevSim(&sim_D, &sim_H);
 
-    PutSim(sim_H, sim_D);
+    putSim(sim_H, sim_D);
 
     // build the program from the kernel source file
 
-    BuildModules(force_kernels, &AdvancePosition, &AdvanceVelocity, &Viz, sim_H, n_local, n_global);
+    buildModules(Force_kernels, &AdvancePosition, &AdvanceVelocity, &Viz, sim_H, n_local, n_global);
 
-    real_t dthalf = sim_H.dt/2.0;
-    real_t dtminushalf = -0.5*sim_H.dt;
+    cl_real dthalf = 0.5*sim_H.dt;
+    cl_real dtminushalf = -0.5*sim_H.dt;
 
     if (eam_flag) {
-        // set the arguments for all 3 EAM_Force kernels
-        SetEAMArgs(force_kernels, sim_D);
+	// set the arguments for all 3 EAM_Force kernels
+	setEAMArgs(Force_kernels, sim_D);
 
     } else {
-        // set kernel arguments for LJ_Force
-        SetLJArgs(force_kernels[0], sim_D);
+	// set kernel arguments for LJ_Force
+	setLJArgs(Force_kernels[0], sim_D);
     }
 
     // set kernel arguments for AdvanceVelocity
-    SetAVArgs(AdvanceVelocity, sim_D, sim_H.dt);
+    setAVArgs(AdvanceVelocity, sim_D, sim_H.dt);
 
     // set kernel arguments for AdvancePosition
-    SetAPArgs(AdvancePosition, sim_D, dthalf);
+    setAPArgs(AdvancePosition, sim_D, dthalf);
 
     // Start the simulation here;
-    printf("Starting simulation\n");
+    printf("************************************************************************\n");
+    printf("Starting SoA OpenCL simulation\n");
 
     //ts = timeNow();
 
-    computeForceOCL(force_kernels, Force_event, n_global, n_local, eam_flag);
+    cl_real t_kern;
+    computeForceOCL(Force_kernels, &Force_event, n_global, n_local, eam_flag, sim_H.ntot, &t_kern);
 
-    GetVec(sim_D.f, sim_H.f, sim_H.array_size);
+    getVec(sim_D.f, sim_H.f, sim_H.array_size);
 
     printf(" Initial:\n");
-    ComputePrintEnergy(sim_D, sim_H);
+    computePrintEnergy(sim_D, sim_H);
 
-    GetPrintState(sim_D, sim_H);
+    getPrintState(sim_D, sim_H);
+}
+
+void computeInitAoS()
+{
+    printf("************************************************************************\n");
+    printf("Initializinging AoS OpenCL simulation\n");
+
+    sim_AoS_D.rmass = (cl_real)(amu_to_m_e)*(double)(sim->pot->mass);
+    sim_AoS_H.eam_flag = eam_flag;
+
+    if(eam_flag) {
+	Force_kernelsAoS = malloc(sizeof(cl_kernel)*3);
+    } else {
+	Force_kernelsAoS = malloc(sizeof(cl_kernel)*1);
+    }
+
+    // set up arrays for OpenCL
+
+    initHostSimAoS(&sim_AoS_H, sim);
+
+    initDevSimAoS(&sim_AoS_D, &sim_AoS_H);
+
+    putSimAoS(sim_AoS_H, sim_AoS_D);
+
+    // build the program from the kernel source file
+
+    buildModulesAoS(Force_kernelsAoS, &AdvancePositionAoS, &AdvanceVelocityAoS, &VizAoS, sim_AoS_H, n_local, n_global);
+
+    cl_real dthalf = 0.5*sim_AoS_H.dt;
+    cl_real dtminushalf = -0.5*sim_AoS_H.dt;
+
+    // set kernel arguments for AdvanceVelocity
+    setAVArgsAoS(AdvanceVelocityAoS, sim_AoS_D, sim_AoS_H.dt);
+
+    // set kernel arguments for AdvancePosition
+    setAPArgsAoS(AdvancePositionAoS, sim_AoS_D, dthalf);
+
+    if (eam_flag) {
+	// set the arguments for all 3 EAM_Force kernels
+	setEAMArgsAoS(Force_kernelsAoS, sim_AoS_D);
+
+    } else {
+	// set kernel arguments for LJ_Force
+	setLJArgsAoS(Force_kernelsAoS[0], sim_AoS_D);
+    }
+
+    // Start the simulation here;
+    printf("************************************************************************\n");
+    printf("Starting AoS OpenCL simulation\n");
+
+    //ts = timeNow();
+
+    cl_real t_kern;
+    computeForceOCL(Force_kernelsAoS, &Force_event, n_global, n_local, eam_flag, sim_AoS_H.ntot, &t_kern);
+
+    getVecAoS(sim_AoS_D.f, sim_AoS_H.f, sim_AoS_H.array_size);
+
+    printf(" Initial:\n");
+    computePrintEnergyAoS(sim_AoS_D, sim_AoS_H);
+
+    getPrintStateAoS(sim_AoS_D, sim_AoS_H);
 }
 
 
@@ -203,56 +381,56 @@ void keyboard(unsigned char key, int x, int y) { glutPostRedisplay(); }
 void idle() { glutPostRedisplay(); }
 void mouse(int button, int state, int x, int y) 
 {
-  if (state == GLUT_DOWN) mouse_buttons |= 1<<button;
-  else if (state == GLUT_UP) mouse_buttons = 0;
+    if (state == GLUT_DOWN) mouse_buttons |= 1<<button;
+    else if (state == GLUT_UP) mouse_buttons = 0;
 
-  mouse_old_x = x;
-  mouse_old_y = y;
-  glutPostRedisplay();
+    mouse_old_x = x;
+    mouse_old_y = y;
+    glutPostRedisplay();
 }
 
 void motion(int x, int y) 
 {
-  float dx = x - mouse_old_x;
-  float dy = y - mouse_old_y;
+    float dx = x - mouse_old_x;
+    float dy = y - mouse_old_y;
 
-  if (mouse_buttons == 1)
-  {
-    Quaternion newRotX;
-    QuaternionSetEulerAngles(&newRotX, -0.2*dx*3.14159/180.0, 0.0, 0.0);
-    QuaternionMul(&q, q, newRotX);
+    if (mouse_buttons == 1)
+    {
+	Quaternion newRotX;
+	QuaternionSetEulerAngles(&newRotX, -0.2*dx*3.14159/180.0, 0.0, 0.0);
+	QuaternionMul(&q, q, newRotX);
 
-    Quaternion newRotY;
-    QuaternionSetEulerAngles(&newRotY, 0.0, 0.0, -0.2*dy*3.14159/180.0);
-    QuaternionMul(&q, q, newRotY);
-  }
-  else if (mouse_buttons == 4)
-  {
-    cameraFOV += dy/25.0f;
-  }
- 
-  mouse_old_x = x;
-  mouse_old_y = y;
-  glutPostRedisplay();
+	Quaternion newRotY;
+	QuaternionSetEulerAngles(&newRotY, 0.0, 0.0, -0.2*dy*3.14159/180.0);
+	QuaternionMul(&q, q, newRotY);
+    }
+    else if (mouse_buttons == 4)
+    {
+	cameraFOV += dy/25.0f;
+    }
+
+    mouse_old_x = x;
+    mouse_old_y = y;
+    glutPostRedisplay();
 }
 
 void renderData() 
 {
-  if (iter == 0) ts = timeNow();
-  if (iter++ < niter) compute_iteration();
-  if (iter == niter) { te = timeNow(); cleanup_ocl(); }
+    if (iter == 0) ts = timeNow();
+    if (iter++ < niter) computeIterationSoA();
+    if (iter == niter) { te = timeNow(); finishOclSoA(); }
 
-  glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
-  glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-  oclRender();
-  glutSwapBuffers();
+    oclRender();
+    glutSwapBuffers();
 }
 #endif
 
 
 int main(int argc, char **argv) {
-  
+
 #ifdef INTEROP_VIZ
     q.x = q.y = q.z = 0.0f;  q.w = 1.0f;  
     mouse_old_x = 0; mouse_old_y = 0; mouse_buttons = 0; cameraFOV = 60.0f;
@@ -260,7 +438,7 @@ int main(int argc, char **argv) {
     glutInit(&argc, argv);
     glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGB | GLUT_DEPTH);
     glutInitWindowSize(1024, 1024);
-    glutCreateWindow("cruft"); 
+    glutCreateWindow("CoMD"); 
     glutDisplayFunc(renderData);
     glutKeyboardFunc(keyboard);
     glutMouseFunc(mouse);
@@ -277,16 +455,24 @@ int main(int argc, char **argv) {
 
 #ifdef INTEROP_VIZ
     oclInitInterop(sim->nboxes);
-    compute_init();
+    computeInitSoA();
     iter = 0;  niter = 10;  nsteps = 10;
     glutMainLoop();
 #else
-    compute_init();
     niter = 10;  nsteps = 10;
+    // SoA test loop
+    computeInitSoA();
     ts = timeNow();
-    for (iter=0; iter<niter; iter++) compute_iteration();
+    for (iter=0; iter<niter; iter++) computeIterationSoA();
     te = timeNow();
-    cleanup_ocl();
+    finishOclSoA();
+    // AoS test loop
+    computeInitAoS();
+    ts = timeNow();
+    for (iter=0; iter<niter; iter++) computeIterationAoS();
+    te = timeNow();
+    finishOclAoS();
+    runRef();
 #endif
 }
 
