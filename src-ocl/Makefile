@@ -1,56 +1,55 @@
-# This is a skeleton makefile in case cmake is having problems..
-# All the paths need to be adjusted to your system. 
-# This file provides the base SRCS that you need.
+val = $(shell nvidia-smi -a 2>/dev/null)
 
-# Uncomment the appropriate lines to enable build options
-# Precision option
+ifeq ($(val),)
+#@echo AMD
+//STREAMSDK = /home/stream/AMD-APP-SDK-v2.4-lnx64
+//STREAMSDK = /home/stream/ati-stream-sdk-v2.3-lnx64
+STREAMSDK = /home/opt/AMDAPP_v2.6
+INCS = -I$(STREAMSDK)/include 
+STREAMSDKLIB = $(STREAMSDK)/lib/x86_64
+LIBS = -L$(STREAMSDKLIB) -lOpenCL -Wl,-rpath,$(STREAMSDKLIB) -lm
+else
+#@echo nVidia
+STREAMSDK =  /home/cuda/sdk4.1.28/OpenCL/common/
+INCS = -I$(STREAMSDK)/inc 
+LIBS = -L/usr/lib64/ -lOpenCL -lm
+endif
 
-#PREC_FLAG = -DDOUBLE
-PREC_FLAG = -DSINGLE
+ifeq ($HOSTNAME , 'cn1' )
+STREAMSDK =  /usr
+INCS = -I$(STREAMSDK)/include
+LIBS = -L/usr/lib64/ -lOpenCL -lm
+endif
 
-#CHEBY_FLAG = -DUSE_CHEBY 
-
-FLAGS = $(PREC_FLAG) $(CHEBY_FLAG) -DGZIPSUPPORT
-
-
-
-#INCS = {path to opencl.h}
-#LIBS = {path to libopencl.so}
-
-LIBS = -framework OpenCL -lz
-
-HEAD = 	 -I. -I../src-flat/include -I./include -DUSEOCL
-
-SRCS =  pmdOCL.c \
-	helpers.c \
-	cl_utils.c \
-	docompute.c\
-	../src-flat/cmdLineParser.c \
-        ../src-flat/domains.c \
-        ../src-flat/eam.c \
-        ../src-flat/ljForce.c \
-        ../src-flat/ic_fcc.c \
-        ../src-flat/cheby.c \
-        ../src-flat/mycommand.c \
-        ../src-flat/read.c \
-        ../src-flat/write.c \
-        ../src-flat/utility.c \
-        ../src-flat/timestep.c
+HEAD = -I. -I../src-flat/include
+SRCS = pmdOCL.c \
+	   helpers.c  \
+	   cl_utils.c  \
+	   docompute.c\
+	   ../src-flat/cmdLineParser.c \
+	   ../src-flat/domains.c \
+	   ../src-flat/eam.c \
+	   ../src-flat/ljForce.c \
+	   ../src-flat/ic_fcc.c \
+	   ../src-flat/mycommand.c \
+	   ../src-flat/read.c \
+	   ../src-flat/write.c \
+	   ../src-flat/utility.c \
+	   ../src-flat/timestep.c
 
 OBJS = $(SRCS:.c=.o)
 
-DEPS = ./include/*.h ../src-flat/include/*.h
+DEPS = *.h
 CC = gcc
 
-all: CoMDOCL
+all: cruft
 
 %.o: %.c $(DEPS)
-	$(CC) -c -o $@ $< $(INCS) $(HEAD) $(FLAGS)
+$(CC) -c -o $@ $< $(INCS) $(HEAD)
 
-CoMDOCL : $(OBJS)
-
-	$(CC) -o ../CoMDOCL -O3 $(OBJS) $(HEAD)  $(INCS) $(LIBS)
+cruft: $(OBJS)
+$(CC) -o ../cruftOCL -O3 $(OBJS) $(HEAD)  $(INCS) $(LIBS)
 
 clean:
-	rm *.o ../src-flat/*.o
+rm *.o ../src-flat/*.o
 
