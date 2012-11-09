@@ -53,6 +53,8 @@
 #include "docompute.h"
 #include "read.h"
 
+#define NUM_CHEBY 32
+
 void printArray(real_t* array, int n, char *name)
 {
     int i;
@@ -128,7 +130,7 @@ simflat_t *initSimFromCmdLine(int argc, char **argv) {
     if (cmd.doeam) {
         eampotential_t *new_pot = (eampotential_t*) pot;
         printf("%e, %e\n", new_pot->phi->x0, new_pot->phi->xn);
-        sim->ch_pot = setChebPot(new_pot, 32);
+        sim->ch_pot = setChebPot(new_pot, NUM_CHEBY);
 #if (DIAG_LEVEL > 0)
         printf("Chebychev coefficients:\n");
         fflush(stdout);

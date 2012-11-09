@@ -39,14 +39,18 @@ float centerX, centerY, centerZ;
   on Apple didn't treat vector types correctly. If you see errors during build time
   about subscripted values, then you have a newer version of OpenCL, and these 'if'
   clauses are no longer needed. They appear a couple more times in this file.
+  You can now set manually toggle these chunks of code using the APPLE_OCL_10 flag
+  below. If you have OpenCL 1.1 or newer, set it to 0
   **/
+#define APPLE_OCL_10 0
+
 void dummy_test()
 {
     cl_float4 dummy;
 
-#if defined (__APPLE__) || defined(MACOSX)
-    //dummy[0] = 1.0;
-    //dummy[1] = 1.0;
+#if (defined (__APPLE__) || defined(MACOSX)) && (APPLE_OCL_10)
+    dummy[0] = 1.0;
+    dummy[1] = 1.0;
 #else
     dummy.x = 1.0;
     dummy.y = 1.0;
@@ -171,7 +175,7 @@ void printStateAoS(
         for (iatom=0;iatom<sim_H.grid.n_atoms[ibox];iatom++) {
 
             i = ibox*MAXATOMS + iatom;
-#if defined (__APPLE__) || defined(MACOSX)
+#if (defined (__APPLE__) || defined(MACOSX)) && (APPLE_OCL_10)
             printf("%02d, %02d, "
 	    "X=(%+020.12e %+020.12e %+020.12e) 1 "
 	    "P=(%+020.12e %+020.12e %+020.12e) "
@@ -1212,7 +1216,7 @@ void initHostSimAoS (host_sim_AoS_t *sim_H, simflat_t *sim)
 
         sim_H->grid.n_atoms[ibox] = sim->natoms[ibox];
 
-#if defined (__APPLE__) || defined(MACOSX)
+#if (defined (__APPLE__) || defined(MACOSX)) && (APPLE_OCL_10)
         sim_H->grid.r_box[ibox][0] = sim->dcenter[ibox][0];
         sim_H->grid.r_box[ibox][1] = sim->dcenter[ibox][1];
         sim_H->grid.r_box[ibox][2] = sim->dcenter[ibox][2];
@@ -1231,7 +1235,7 @@ void initHostSimAoS (host_sim_AoS_t *sim_H, simflat_t *sim)
         for(iatom=0;iatom<sim->natoms[ibox];iatom++) {
 
             ioff = ibox*MAXATOMS + iatom;
-#if defined (__APPLE__) || defined(MACOSX)
+#if (defined (__APPLE__) || defined(MACOSX)) && (APPLE_OCL_10)
             sim_H->r[ioff][0] = sim->r[ioff][0];
             sim_H->r[ioff][1] = sim->r[ioff][1];
             sim_H->r[ioff][2] = sim->r[ioff][2];
