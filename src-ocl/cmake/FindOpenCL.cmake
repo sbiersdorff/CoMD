@@ -9,6 +9,7 @@ set(
   /usr/local/include
   /usr/include
   # Append additional search directories for OpenCL include files here.
+   /usr/common/usg/cuda/4.2/include
 )
 
 set(
@@ -24,6 +25,7 @@ set(
   /usr/lib64
   /usr/lib
   # Append additional search directories for OpenCL libraries here.
+   /usr/common/usg/cuda/4.2/include
 )
 
 if("${CMAKE_SYSTEM_PROCESSOR}" EQUAL "x86_64")
@@ -61,6 +63,7 @@ ENDIF (APPLE)
   /usr/local/include
   /usr/include
   # Append additional search directories for OpenCL include files here.
+   /usr/common/usg/cuda/4.2/include
 )
 
 set(
@@ -76,6 +79,7 @@ set(
   /usr/lib64
   /usr/lib
   # Append additional search directories for OpenCL libraries here.
+   /usr/common/usg/cuda/4.2/include
 )
 
 if("${CMAKE_SYSTEM_PROCESSOR}" EQUAL "x86_64")
