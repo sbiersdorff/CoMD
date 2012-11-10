@@ -25,7 +25,7 @@ set(
   /usr/lib64
   /usr/lib
   # Append additional search directories for OpenCL libraries here.
-   /usr/common/usg/cuda/4.2/include
+  /usr/common/usg/nvidia-driver-util/4.2/lib64
 )
 
 if("${CMAKE_SYSTEM_PROCESSOR}" EQUAL "x86_64")
@@ -79,7 +79,7 @@ set(
   /usr/lib64
   /usr/lib
   # Append additional search directories for OpenCL libraries here.
-   /usr/common/usg/cuda/4.2/include
+  /usr/common/usg/nvidia-driver-util/4.2/lib64
 )
 
 if("${CMAKE_SYSTEM_PROCESSOR}" EQUAL "x86_64")
