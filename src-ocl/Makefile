@@ -12,10 +12,12 @@ PREC_FLAG = -DSINGLE
 
 FLAGS = $(PREC_FLAG) $(CHEBY_FLAG) -DGZIPSUPPORT
 
-
-
 #INCS = {path to opencl.h}
 #LIBS = {path to libopencl.so}
+
+# example paths set up for Dirac. Modify as needed.
+#INCS = -I/usr/common/usg/cuda/4.2/include/
+#LIBS = -L/usr/common/usg/nvidia-driver-util/4.2/lib64 -lz -lm -lOpenCL
 
 LIBS = -framework OpenCL -lz
 
