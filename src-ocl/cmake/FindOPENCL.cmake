@@ -9,6 +9,7 @@ set(
   /usr/local/include
   /usr/include
   # Append additional search directories for OpenCL include files here.
+  /usr/common/usg/cuda/4.2/include
 )
 
 set(
@@ -61,6 +62,7 @@ ENDIF (APPLE)
   /usr/local/include
   /usr/include
   # Append additional search directories for OpenCL include files here.
+  /usr/common/usg/cuda/4.2/include
 )
 
 set(
