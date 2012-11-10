@@ -18,35 +18,34 @@ set(EXECUTABLE_OUTPUT_PATH ${CMAKE_SOURCE_DIR})
 
 set (CMAKE_C_FLAGS "")
 
-if(APPLE)
-    find_library(OPENGL_LIBRARY OpenGL)
-    find_library(GLUT_LIBRARY GLUT)
-    mark_as_advanced(OPENGL_LIBRARY GLUT_LIBRARY)
-set(EXTRA_LIBS ${OPENGL_LIBRARY} ${GLUT_LIBRARY})
-    set(EXTRA_FLAGS " -mmacosx-version-min=10.5 ")
-    #SET(EXECUTABLE_FLAG MACOSX_BUNDLE)
-else ()
-    find_package(OpenGL)
-find_package(GLUT)
-    set(EXTRA_INCLUDES " ")
-endif(APPLE)
-
 set(CMAKE_MODULE_PATH
     ${CMAKE_MODULE_PATH}
         "${CMAKE_SOURCE_DIR}/src-ocl/cmake"
 )
+set(EXTRA_INCLUDES " ")
+
+    if(APPLE)
+	find_library(OPENGL_LIBRARY OpenGL)
+	find_library(GLUT_LIBRARY GLUT)
+	mark_as_advanced(OPENGL_LIBRARY GLUT_LIBRARY)
+	set(EXTRA_LIBS ${OPENGL_LIBRARY} ${GLUT_LIBRARY})
+	set(EXTRA_FLAGS " -mmacosx-version-min=10.5 ")
+    else ()
+	find_package(OpenGL)
+	find_package(GLUT)
+    endif(APPLE)
 
 #cluge for cmake inability to find glut.h correctly 
-find_path(GLUT_INCLUDE_DIR glut.h)
-if ( NOT EXISTS ${GLUT_INCLUDE_DIR}/glut.h ) 
-    if ( EXISTS ${GLUT_INCLUDE_DIR}/GL/glut.h )
-        set ( GLUT_INCLUDE_DIR ${GLUT_INCLUDE_DIR}/GL)
-    elseif ( EXISTS ${GLUT_INCLUDE_DIR}/OpenGL/glut.h )
-        set ( GLUT_INCLUDE_DIR ${GLUT_INCLUDE_DIR}/OpenGL)
-else ()
-    MESSAGE ("   _______________" FATAL ERROR "Unable to find glut.h" )
+    find_path(GLUT_INCLUDE_DIR glut.h)
+    if ( NOT EXISTS ${GLUT_INCLUDE_DIR}/glut.h ) 
+	if ( EXISTS ${GLUT_INCLUDE_DIR}/GL/glut.h )
+	    set ( GLUT_INCLUDE_DIR ${GLUT_INCLUDE_DIR}/GL)
+	elseif ( EXISTS ${GLUT_INCLUDE_DIR}/OpenGL/glut.h )
+	    set ( GLUT_INCLUDE_DIR ${GLUT_INCLUDE_DIR}/OpenGL)
+    else ()
+	#MESSAGE ("   _______________" FATAL ERROR "Unable to find glut.h" )
+	endif ()
     endif ()
-endif ()
 
 include_directories(${CMAKE_SOURCE_DIR})
 
