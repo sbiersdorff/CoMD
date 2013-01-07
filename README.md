@@ -115,7 +115,7 @@ Most features have been tested on Mac and on Linux (Fedora).
 
 The initial authors of CoMD (all at Los Alamos National Laboratory) are:
 
- * Sriram Swainarayan
+ * Sriram Swaminarayan
  * Jamaludin Mohd-Yusof
  * Christopher Sewell
 
