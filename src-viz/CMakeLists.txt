@@ -42,6 +42,8 @@ if (DO_IN_SITU_VIZ)
       quaternion.c
       pmdViz.c
       ../src-flat/docompute.c
+      ../src-flat/cheby.c
+      ../src-flat/ic_fcc.c
       ../src-flat/cmdLineParser.c
       ../src-flat/domains.c
       ../src-flat/eam.c

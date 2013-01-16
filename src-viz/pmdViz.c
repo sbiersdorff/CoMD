@@ -7,7 +7,9 @@
 #include <unistd.h>
 #include <getopt.h>
 
+#include "docompute.h"
 #include "pmd.h"
+#include "utility.h"
 
 #include <pthread.h>
 
